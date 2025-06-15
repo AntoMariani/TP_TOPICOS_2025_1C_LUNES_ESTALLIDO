@@ -39,8 +39,10 @@ TP_TOPICOS_2025_1C_LUNES_ESTALLIDO/
 ├── log/
 │   └── [logs de partida]
 ├── lib/
-│   └── SDL2_Image/
-│   └── SDL2_ttf/
+│   └── SDL2_Image/lib/
+│               └──... 
+│   └── SDL2_ttf/lib/
+│               └──...
 │   └── SDL2.dll
 │   └── SDL2_image.dll
 │   └── SDL2_ttf.dll

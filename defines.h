@@ -68,6 +68,10 @@ typedef struct {
     Uint32 cheatTiempoInicio;
 } Juego;
 
+//Un enum (enumeración) es un tipo de dato que permite definir un conjunto de valores constantes con nombre
+//El typedef permite crear un alias para ese tipo facilitando el uso.
+//opcion = OPCION_PRINCIPAL_JUGAR;
+
 typedef enum {
     OPCION_PRINCIPAL_JUGAR,
     OPCION_PRINCIPAL_ESTADISTICAS,
@@ -113,7 +117,7 @@ void chequearError(int error, int errorEsperado);
 #define MAX_CLICKS_CHEAT 7
 #define FRAMES_RASTREADOR 2
 
-#define MAX_NOMBRE 16
+#define MAX_NOMBRE 5
 #define MAX_DIFICULTAD 16
 #define MAX_ESTADISTICAS 3
 #define MAX_ESTAD_TOTALES 100

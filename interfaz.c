@@ -4,25 +4,28 @@
 void inicializarSDL() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
         printf("Error al inicializar SDL: %s\n", SDL_GetError());
-        chequearError(-1, ERROR_SDL);
+        chequearError(-990, ERROR_SDL);
     }
     printf("SDL inicializado correctamente\n");
-}
-
-void inicializarSDLImagenes() {
-    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
-        printf("Error al inicializar SDL_image: %s\n", IMG_GetError());
-        chequearError(-1, ERROR_SDL_IMAGE);
-    }
 }
 
 void inicializarSDLTtf() {
     if (TTF_Init() == -1) {
         printf("Error al inicializar SDL_ttf: %s\n", TTF_GetError());
-        chequearError(-1, ERROR_SDL_TTF);
+        chequearError(-991, ERROR_SDL_TTF);
     }
+    printf("SDL TTF inicializado correctamente\n");
 }
 
+void inicializarSDLImagenes() {
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        printf("Error al inicializar SDL_image: %s\n", IMG_GetError());
+        chequearError(-992, ERROR_SDL_IMAGE);
+    }
+    printf("SDL imagen inicializado correctamente\n");
+}
+
+//inicializamos todo junto para evitar muchos llamados en main
 void inicializarSDLCompleto(){
     inicializarSDL();
     inicializarSDLImagenes();
@@ -31,12 +34,14 @@ void inicializarSDLCompleto(){
 
 int crearVentana(SDL_Window** ventana, int width, int height)
 {
+    //se crea ventana centrada
     *ventana = SDL_CreateWindow("BuscaEsferas",
                                SDL_WINDOWPOS_CENTERED,
                                SDL_WINDOWPOS_CENTERED,
                                width,
                                height,0);
 
+    //si la ventana falla, es null
     if(*ventana == NULL)
     {
         printf("No se ha podido crear la ventana: %s\n", SDL_GetError());
@@ -49,9 +54,12 @@ int crearVentana(SDL_Window** ventana, int width, int height)
     }
 }
 
+
 int crearRenderer(SDL_Renderer** renderer, SDL_Window** ventana)
 {
+    //idem ventana, pero SDL_RENDERER_ACCELERATED es para usar la GPU de estar disponible entiendo
     *renderer = SDL_CreateRenderer(*ventana, -1, SDL_RENDERER_ACCELERATED);
+
     if(*renderer == NULL)
     {
         printf("No se ha podido crear el renderer: %s\n", SDL_GetError());
@@ -64,13 +72,22 @@ int crearRenderer(SDL_Renderer** renderer, SDL_Window** ventana)
 
 void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer)
 {
-    SDL_DisplayMode displayMode;
-    SDL_GetCurrentDisplayMode(0, &displayMode);
+    //obtenemos el modo de pantalla actual para poder calcular como escalarlo
+    SDL_DisplayMode displayMode; //es un tipo de dato struct definido por sdl con varios campos: w, h, format, refresh_rate, driverdata
+
+    SDL_GetCurrentDisplayMode(0, &displayMode); //obtenemos la res actual del monitor principal, el 0 significa el primer monitor y la guardar en displayMode
+
+    printf("Resolucion: %dx%d\n", displayMode.w, displayMode.h); 
+    //imprimimos la res para ver de ejemplo, TIENE EN CUENTA EL ZOOM por ejemplo mi pantalla esta en 1920 x 1200 al 125% y cambia la res en base a eso
+
+    //cargamos nuestras vars de ancho y alto para escalar
     int anchoPantalla = displayMode.w;
     int altoPantalla  = displayMode.h;
 
+    // Calculamos el escalado de la UI en base a la resolucion del monitor
     calcularEscaladoUI(&escalado, anchoPantalla, altoPantalla);
 
+    //generamos la ventana y el renderer según todo lo que escalamos
     chequearError(crearVentana(ventana, escalado.anchoVentanaMenu, escalado.altoVentanaMenu), NO_GENERO_VENTANA);
     chequearError(crearRenderer(renderer, ventana), NO_GENERO_RENDERER);
 }
@@ -78,66 +95,100 @@ void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer)
 
 void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD, int clicksCheat, bool cheatEnPeriodoActivo, Uint32 cheatActivadoTiempo)
 {
+    //verificacion de punteros validos
     if (!renderer || !juego || !fuente || !fuenteHUD) {
         printf("Error: Renderer, juego o fuentes no inicializados correctamente.\n");
         return;
     }
 
+    //limpia la pantalla con un color de fondo
     SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect hud = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior };
-    SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
+    //dibuja el HUD en la barra superior
+    SDL_Rect hud = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior }; //typedef struct SDL_Rect {int x, y; int w, h;} SDL_Rect;
+    //x posicion horizontal izquierda, y posicion vertical superior, w ancho, h alto.
+    //x = 0 el rectangulo empieza en el borde izquierdo de la ventana, y = 0 el rectangulo empieza en el borde superior de la ventana
+    //w = juego->tamCasilla (tamaño en pixeles de cada casilla) * juego->dimension (cantidad de casillas en una fila o columna)
+    //h = escalado.paddingSuperior el alto del rectangulo es el padding superior
+
+    //confugura el color de fondo del HUD y lo dibuja
+    SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255); //aca podriamos usar un color definido en colores[], tendriamos que agregarlo, agregar su define y pasarselo asi SDL_SetRenderDrawColor(renderer, colorLCD.r, colorLCD.g, colorLCD.b, colorLCD.a)
     SDL_RenderFillRect(renderer, &hud);
 
-    char minasTexto[4];
-    sprintf(minasTexto, "%03d", juego->totalMinas - juego->minasMarcadas);
+    //////////////////////////////////CONTADOR DE MINAS RESTANTES////////////////////////////////////
+    char minasTexto[4]; //para mostrar las minas restantes
+    sprintf(minasTexto, "%03d", juego->totalMinas - juego->minasMarcadas); //formatea el texto con las minas restantes, mestra un numero de 3 digitos, rellenando con ceros a la izq
     SDL_Color colorLCD = colores[CNH];
+
+    //generamos la superficie de texto con el contador de minas, es una imagen en memoria "surface" que contiene el texto correspondiente dibujado con la fuente y color correspondientes
+    //se tiene que si o si usar una surface para crear una textura con la funcion correspondiente
+    // TTF_RenderText_Blended crea una surface con el texto renderizado, el color y la fuente especificados
     SDL_Surface* surfaceMinas = TTF_RenderText_Blended(fuenteHUD, minasTexto, colorLCD);
+    
+    //conviertimos el surface en RAM  a una textura que puede ser usada por el renderer de SDL para dibujar en pantalla
     SDL_Texture* texturaMinas = SDL_CreateTextureFromSurface(renderer, surfaceMinas);
-    SDL_Rect rectMinas = {20, 10, surfaceMinas->w, surfaceMinas->h};
+
+    //define el rectangulo en donde se tiene que dibujar la textura del contador de minas (texto)
+    SDL_Rect rectMinas = {20, 10, surfaceMinas->w, surfaceMinas->h}; //20 y 10 posicion en ventana en px desde izq y desde arriba, ancho y alto del renderizado
+
+    //aca efectivamente dibuja la textura en la ventan adonde se indica, el null indica que se usa toda la textura
     SDL_RenderCopy(renderer, texturaMinas, NULL, &rectMinas);
+
+    //libera después de dibujar la superficie y textura
     SDL_FreeSurface(surfaceMinas);
     SDL_DestroyTexture(texturaMinas);
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////TIMER SUPERIOR//////////////////////////////////////////
+    // calcula el tiempo, si el juego ya termino usa el tiempo de fin - inicio divide /1000 para segundos, si el juego esta en curso usa SDL_GetTicks() que devuelve ms dedde que se inciio SDL - tiempoInicio.
     int segundosTranscurridos = (juego->finalizado) ? (juego->tiempoFin - juego->tiempoInicio) / 1000 : (SDL_GetTicks() - juego->tiempoInicio) / 1000;
+
+    //limitamos tiempo a 999
     if (segundosTranscurridos > 999) segundosTranscurridos = 999;
-    char tiempoTexto[4];
+
+    //idem minas
+    char tiempoTexto[4]; 
     sprintf(tiempoTexto, "%03d", segundosTranscurridos);
     SDL_Surface* surfaceTiempo = TTF_RenderText_Blended(fuenteHUD, tiempoTexto, colorLCD);
     SDL_Texture* texturaTiempo = SDL_CreateTextureFromSurface(renderer, surfaceTiempo);
-    int anchoVentana = juego->tamCasilla * juego->dimension;
-    SDL_Rect rectTiempo = {anchoVentana - surfaceTiempo->w - 20, 10, surfaceTiempo->w, surfaceTiempo->h};
+    int anchoVentana = juego->tamCasilla * juego->dimension; //como el temp va a la derecha, tenemos que calcular el ancho de ventana
+    SDL_Rect rectTiempo = {anchoVentana - surfaceTiempo->w - 20, 10, surfaceTiempo->w, surfaceTiempo->h}; // calculamos segun el ancho y el padding, 20 es el padding desde la derecha, 10 es el padding desde arriba
     SDL_RenderCopy(renderer, texturaTiempo, NULL, &rectTiempo);
     SDL_FreeSurface(surfaceTiempo);
     SDL_DestroyTexture(texturaTiempo);
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////////////////////////CHEAT//////////////////////////////////////////////
+    //calculamos centro del hud para el boton de cheat, teniendo el cuenta el padding superior
     int centroX = anchoVentana / 2;
     int centroY = escalado.paddingSuperior / 2;
-    int tamanioBoton = (int)(50 * escalado.escalaGlobal);
-    if (tamanioBoton < 35) tamanioBoton = 35;
+    int tamanioBoton = (int)(50 * escalado.escalaGlobal); // el tamaño del botón se escala según la resolución de pantalla
+    if (tamanioBoton < 35) tamanioBoton = 35; // tamaño mínimo para el botón
 
-    SDL_Rect rectBoton = { centroX - tamanioBoton/2, centroY - tamanioBoton/2, tamanioBoton, tamanioBoton };
+    SDL_Rect rectBoton = { centroX - tamanioBoton/2, centroY - tamanioBoton/2, tamanioBoton, tamanioBoton }; 
+    //para que los centros coincidal centroX - tamanioBoton/2
 
     if (cheatEnPeriodoActivo) {
-        int frame = (SDL_GetTicks() / 200) % FRAMES_RASTREADOR;
-        SDL_RenderCopy(renderer, rastreador_cheat_texturas[frame], NULL, &rectBoton);
+        int frame = (SDL_GetTicks() / 200) % FRAMES_RASTREADOR; //cada 200 ms el valor aumenta en 1, cada 0,2 segs cambia el frame de animacion. % FRAMES_RASTREADOR hace que el valor vuelva a 0 para que haga bucle
+        SDL_RenderCopy(renderer, rastreador_cheat_texturas[frame], NULL, &rectBoton); //PONE EL RASTREADOR EN LUGAR DE LA ESFERA
     } else {
-        int frameAnimacion = (SDL_GetTicks() / 200) % FRAMES_ESFERAS;
-        int esferaActual = (clicksCheat % 7);
-        if (esferaActual == 0) esferaActual = 1;
-        SDL_RenderCopy(renderer, esferas_texturas[esferaActual][frameAnimacion], NULL, &rectBoton);
+        int frameAnimacion = (SDL_GetTicks() / 200) % FRAMES_ESFERAS; //calcula que frame mostrar
+        int esferaActual = (clicksCheat % 7); //calcula que esfera mostrar para que sea entre 0 y 6
+        if (esferaActual == 0) esferaActual = 1; //si da 0 lo cambia a 1 porque la esfera 0 no existe
+        SDL_RenderCopy(renderer, esferas_texturas[esferaActual][frameAnimacion], NULL, &rectBoton); //dibuja la textura de la esfera correspondiente a esferaActual y el frame de animacion actual frameAnimacion
     }
 
-    SDL_Rect celda = {0, 0, juego->tamCasilla, juego->tamCasilla};
+    SDL_Rect celda = {0, 0, juego->tamCasilla, juego->tamCasilla}; //creamos el rectangulo que representa una casilla del tablero empezando en 0,0
 
-    for (int fila = 0; fila < juego->dimension; fila++) {
+    for (int fila = 0; fila < juego->dimension; fila++) { //estos dos for recorren el tablero calculando la posicion de cada celda en pantalla
         for (int col = 0; col < juego->dimension; col++) {
             celda.x = col * juego->tamCasilla;
             celda.y = escalado.paddingSuperior + fila * juego->tamCasilla;
-            Casilla* casilla = &juego->tablero[fila][col];
+            Casilla* casilla = &juego->tablero[fila][col]; //, obteniendo un puntero a la casilla actual
 
-            if (juego->finalizado && casilla->esMina) {
+            if (juego->finalizado && casilla->esMina) { //si el juego finalizó y la casilla es una mina pone una mina explotada en esa celda, sino muestra una esfera random
                 if (fila == juego->minaExplotadaFila && col == juego->minaExplotadaCol) {
                     int frameAnimacion = (SDL_GetTicks() / 200) % FRAMES_MINA_EXPLOTADA;
                     SDL_RenderCopy(renderer, mina_explotada_texturas[frameAnimacion], NULL, &celda);
@@ -146,7 +197,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
                     SDL_RenderCopy(renderer, esferas_texturas[casilla->esferaAlPerder][frameAnimacion], NULL, &celda);
                 }
             }
-            else if (juego->finalizado && casilla->revelada && !casilla->esMina) {
+            else if (juego->finalizado && casilla->revelada && !casilla->esMina) { //si el juego finalizo y la casilla fue revelada y no es una mina, muestra el numero de minas vecinas
                 SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
                 SDL_RenderFillRect(renderer, &celda);
                 if (casilla->minasVecinas > 0) {
@@ -154,7 +205,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
                     SDL_RenderCopy(renderer, numeros_texturas[casilla->minasVecinas][frameAnimacion], NULL, &celda);
                 }
             }
-            else if (casilla->revelada) {
+            else if (casilla->revelada) { //si la casilla fue revelada y no es una mina, muestra el numero de minas vecinas
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderFillRect(renderer, &celda);
                 if (casilla->minasVecinas > 0) {
@@ -162,24 +213,27 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
                     SDL_RenderCopy(renderer, numeros_texturas[casilla->minasVecinas][frameAnimacion], NULL, &celda);
                 }
             }
-            else if (casilla->marcada) {
+            else if (casilla->marcada) { //si la casilla esta marcada, muestra una esfera
                 int frameAnimacion = (SDL_GetTicks() / 200) % FRAMES_ESFERAS;
                 SDL_RenderCopy(renderer, esferas_texturas[casilla->esfera][frameAnimacion], NULL, &celda);
             }
-            else {
+            else { //si la casilla no fue revelada ni marcada, dibuja un rectangulo gris claro
                 SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
                 SDL_RenderFillRect(renderer, &celda);
             }
 
-            SDL_SetRenderDrawColor(renderer, colores[CN].r, colores[CN].g, colores[CN].b, colores[CN].a);
-            SDL_RenderDrawRect(renderer, &celda);
+            // Dibuja el borde de la celda
+            SDL_SetRenderDrawColor(renderer, colores[CNH].r, colores[CNH].g, colores[CNH].b, colores[CNH].a);
+            SDL_RenderDrawRect(renderer, &celda); //dibuja SOLO el contorno de un rectangulo
         }
     }
 
-    if (juego->minasColocadas && cheatEnPeriodoActivo && !juego->finalizado) {
+    if (juego->minasColocadas && cheatEnPeriodoActivo && !juego->finalizado) { 
+        //si el cheat esta activo y las minas ya fueron colocadas, dibuja el overlay de minas
         dibujarOverlayCheat(renderer, juego);
     }
 
+    //Actualiza el renderer para mostrar todo lo que se dibujó
     SDL_RenderPresent(renderer);
 }
 
@@ -619,38 +673,48 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
 }
 
 bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,
-                          opcionesMenuPrincipal* opcionPrincipal,
-                          opcionesMenuTipoPartida* opcionTipo,
-                          opcionesMenuDificultad* dificultad,
-                          char* nombreUsuario)
+                         opcionesMenuPrincipal* opcionPrincipal,
+                         opcionesMenuTipoPartida* opcionTipo,
+                         opcionesMenuDificultad* dificultad,
+                         char nombreUsuario[MAX_NOMBRE])
 {
-    *opcionPrincipal = mostrarMenuPrincipal(renderer, ventana, fuenteTexto);
-
-    if (*opcionPrincipal == OPCION_PRINCIPAL_SALIR)
-        return false;
-
-    if (*opcionPrincipal == OPCION_PRINCIPAL_ESTADISTICAS)
-    {
-        mostrarEstadisticas(renderer, ventana, fuenteTexto, fuenteHUD);
-        return true;  
+    while (true) { //opciones menu principal
+        *opcionPrincipal = mostrarMenuPrincipal(renderer, ventana, fuenteTexto);
+        //si quiso salir, salgo del menu
+        if (*opcionPrincipal == OPCION_PRINCIPAL_SALIR)
+            return false;
+        //si eligió estadísticas, muestro las estadísticas
+        if (*opcionPrincipal == OPCION_PRINCIPAL_ESTADISTICAS) {
+            mostrarEstadisticas(renderer, ventana, fuenteTexto, fuenteHUD);
+            continue; // hace que el bucle vuelva al incicio DESDE EL MENÚ PRINCIPAL
+        }
+        //si llego hasta aca es porque eligió jugar
+        if (*opcionPrincipal == OPCION_PRINCIPAL_JUGAR) {
+            while (true) { //en este bucle manejamos el flujo de menus de partida
+                // Menú tipo de partida
+                *opcionTipo = mostrarMenuTipoPartida(renderer, ventana, fuenteTexto);
+                if (*opcionTipo == OPCION_PARTIDA_MENU_PRINCIPAL)
+                    break; // Corta y vuelve al menú principal porque el primer while vuelve a arrancar
+                //si llego aca es porque eligió una partida nueva
+                if (*opcionTipo == OPCION_PARTIDA_NUEVA) {
+                    while (true) { //manejo de menús de partida nueva
+                        // Menú dificultad
+                        *dificultad = mostrarMenuDificultad(renderer, ventana, fuenteTexto);
+                        if (*dificultad == DIFICULTAD_VOLVER)
+                            break; // Volver al menú tipo de partida porque se repite el while mas cercano
+                        while (true) {
+                            // Menú nickname, donde pide el nick
+                            opcionesMenuNickname opcionNick = mostrarMenuNickname(renderer, ventana, fuenteTexto, nombreUsuario);
+                            if (opcionNick == OPCION_NICKNAME_VOLVER)
+                                break; // Volver al menú dificultad pooorque vuelve al while mas cercano
+                            // Si llegó acá, juega
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
     }
-
-    *opcionTipo = mostrarMenuTipoPartida(renderer, ventana, fuenteTexto);
-    if (*opcionTipo == OPCION_PARTIDA_MENU_PRINCIPAL)
-        return true;
-
-    *dificultad = mostrarMenuDificultad(renderer, ventana, fuenteTexto);
-    if (*dificultad == DIFICULTAD_VOLVER)
-        return true;
-
-    if (*dificultad != DIFICULTAD_CUSTOM)
-    {
-        opcionesMenuNickname opcionNick = mostrarMenuNickname(renderer, ventana, fuenteTexto, nombreUsuario);
-        if (opcionNick == OPCION_NICKNAME_VOLVER)
-            return true;
-    }
-
-    return true;
 }
 
 void dibujarLogo(SDL_Renderer* renderer, SDL_Window* ventana, int frameLogo)

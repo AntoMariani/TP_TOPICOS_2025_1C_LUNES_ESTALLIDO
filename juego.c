@@ -3,26 +3,29 @@
 
 void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
 {
-    FILE* archivo = fopen(archivoConfiguracion, "r");
+    FILE* archivo = fopen(archivoConfiguracion, "r"); //abre en read
     if (!archivo) {
         printf("No se pudo abrir %s\n", archivoConfiguracion);
         chequearError(NO_ABRIO_ARCHIVO, NO_ABRIO_ARCHIVO);
     }
 
-    char linea[256];
+    char linea[256]; //se prepara para leer linea
 
+    //intenta leer linea dimensiones
     if (fgets(linea, sizeof(linea), archivo) == NULL) {
         printf("Error: No se pudo leer la línea de dimensiones\n");
         fclose(archivo);
         chequearError(ERROR_FORMATO, ERROR_FORMATO);
     }
 
+    // Verifica que la línea comience con "dimensiones="
     if (strncmp(linea, "dimensiones=", 12) != 0) {
         printf("Error: Formato inválido en la línea de dimensiones\n");
         fclose(archivo);
         chequearError(ERROR_FORMATO, ERROR_FORMATO);
     }
 
+    // Intenta leer el valor de dimensiones y chequea min y max
     int cantidadLeida = sscanf(linea, "dimensiones=%d", &juego->dimension);
     if (cantidadLeida != 1 || juego->dimension < MIN_DIMENSION || juego->dimension > MAX_DIMENSION) {
         printf("Error: Dimensiones inválidas (min %d, max %d)\n", MIN_DIMENSION, MAX_DIMENSION);
@@ -30,18 +33,21 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
         chequearError(ERROR_DIMENSION, ERROR_DIMENSION);
     }
 
+    // Intenta leer la línea de minas
     if (fgets(linea, sizeof(linea), archivo) == NULL) {
         printf("Error: No se pudo leer la línea de minas\n");
         fclose(archivo);
         chequearError(ERROR_FORMATO, ERROR_FORMATO);
     }
 
-    if (strncmp(linea, "minas=", 6) != 0) {
+    // Verifica que la línea comience con "minas="
+    if (strncmp(linea, "minas=", 6) != 0) { //comparamos los primeros 6 catacteres
         printf("Error: Formato inválido en la línea de minas\n");
         fclose(archivo);
         chequearError(ERROR_FORMATO, ERROR_FORMATO);
     }
 
+    // Intenta leer el valor de minas y chequea si no pudo leer el número, o si el número es menor a 1 o mayor o igual al total de casillas del tablero, muestra un mensaje, cierra el archivo y termina con error.
     cantidadLeida = sscanf(linea, "minas=%d", &juego->totalMinas);
     if (cantidadLeida != 1 || juego->totalMinas < 1 || juego->totalMinas >= juego->dimension * juego->dimension) {
         printf("Error: Cantidad de minas inválida\n");
@@ -49,25 +55,27 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
         chequearError(ERROR_CANTIDAD_MINAS, ERROR_CANTIDAD_MINAS);
     }
 
-    fclose(archivo);
+    fclose(archivo); //cierra
 
     printf("dimensiones=%d totalMinas=%d\n", juego->dimension, juego->totalMinas);
 
-    juego->minasMarcadas = 0;
-    juego->finalizado = false;
-    juego->minasColocadas = false;
+    juego->minasMarcadas = 0; //ninguna marcada al inicio
+    juego->finalizado = false; //no finalizado al inicio
+    juego->minasColocadas = false; //no colocadas al inicio
     juego->minaExplotadaFila = -1;
     juego->minaExplotadaCol = -1;
 
     juego->tamCasilla = calcularTamCasilla(juego->dimension);
-    juego->tamPixel = juego->tamCasilla / 8;
+    //juego->tamPixel = juego->tamCasilla / 8;
 
+    //reserva memoria para el array de punteros a filas del tablero
     juego->tablero = malloc(juego->dimension * sizeof(Casilla*));
     if (!juego->tablero) {
         printf("Fallo al asignar memoria dinámica para el tablero\n");
         chequearError(NO_ASIGNO_MEM_TABLERO, NO_ASIGNO_MEM_TABLERO);
     }
 
+    //para cada fila reserva memoria para las casillas de esa fila
     for (int i = 0; i < juego->dimension; i++) {
         juego->tablero[i] = malloc(juego->dimension * sizeof(Casilla));
         if (!juego->tablero[i]) {
@@ -75,7 +83,7 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
             chequearError(NO_ASIGNO_MEM_FILA_TABLERO, NO_ASIGNO_MEM_FILA_TABLERO);
         }
 
-        for (int j = 0; j < juego->dimension; j++) {
+        for (int j = 0; j < juego->dimension; j++) { //inicializa cada casilla de la fila, sin mina, no revelada, no marcada, sin minas vecinas
             juego->tablero[i][j] = (Casilla){ false, false, false, 0, 0 };
         }
     }
@@ -83,20 +91,20 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
 
 
 void liberarJuego(Juego* juego) {
-    for (int i = 0; i < juego->dimension; i++) {
-        free(*(juego->tablero + i));
+    for (int i = 0; i < juego->dimension; i++) { //Recorres las filas
+        free(*(juego->tablero + i)); //Libera la memoria
     }
-    free(juego->tablero);
+    free(juego->tablero); //libera la memoria del array principal de punteros a filas
 }
 
-int calcularTamCasilla(int dimension) {
+int calcularTamCasilla(int dimension) { //calcula el tam en piceles de cada casilla del tableto para que todo el tablero entre en la ventana
     int tam = TAM_CASILLA_FIJA;
 
-    if (dimension * tam > MAX_ANCHO || dimension * tam > MAX_ALTO) {
+    if (dimension * tam > MAX_ANCHO || dimension * tam > MAX_ALTO) { //si el tablero usando ese tamaño fijo no entra en el ancho o alto calcula el maximo tamaño de casillas que cabe en el ancho y en el alto
         int maxTamPorAncho = MAX_ANCHO / dimension;
         int maxTamPorAlto = MAX_ALTO / dimension;
 
-        tam = (maxTamPorAncho < maxTamPorAlto) ? maxTamPorAncho : maxTamPorAlto;
+        tam = (maxTamPorAncho < maxTamPorAlto) ? maxTamPorAncho : maxTamPorAlto; //elige el menor de los dos tamaños
         tam -= tam % 8; 
     }
 
@@ -106,65 +114,66 @@ int calcularTamCasilla(int dimension) {
 
 void llenar(Juego* juego, int filaInicial, int colInicial)
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
 
-    int intentos = 0;
-    do {
-        for (int fila = 0; fila < juego->dimension; fila++) {
+    int intentos = 0; // para que no genere una mina en esa casilla inciial
+    do { //Repite hasta que la casilla inicial no tenga minas vecinas
+        for (int fila = 0; fila < juego->dimension; fila++) { //rrecorre todo y lo deja sin minas
             for (int col = 0; col < juego->dimension; col++) {
                 juego->tablero[fila][col].esMina = false;
             }
         }
 
+        //coloca minas aleatorais
         int minas = 0;
         while (minas < juego->totalMinas) {
             int fila = rand() % juego->dimension;
             int col = rand() % juego->dimension;
 
-            if ((fila == filaInicial && col == colInicial) || juego->tablero[fila][col].esMina)
+            if ((fila == filaInicial && col == colInicial) || juego->tablero[fila][col].esMina) //si es la casilla inicial o ya hay mina ahi, la salta, sino coloca mina y suma
                 continue;
 
             juego->tablero[fila][col].esMina = true;
             minas++;
         }
 
-        calcularMinasVecinas(juego);
+        calcularMinasVecinas(juego); //calcula las minas vecinas de cada casilla
         intentos++;
         printf("Intento %d: minas colocadas\n", intentos);
 
-    } while (juego->tablero[filaInicial][colInicial].minasVecinas != 0);
+    } while (juego->tablero[filaInicial][colInicial].minasVecinas != 0); //si la casilla inical tiene minas, repite proceso
 
     juego->minasColocadas = true;
 }
 
 
 void calcularMinasVecinas(Juego* juego) {
-    for (int fila = 0; fila < juego->dimension; fila++) {
+    for (int fila = 0; fila < juego->dimension; fila++) { //recorre todas filas y columnas
         Casilla** filaPtr = juego->tablero + fila;
         for (int col = 0; col < juego->dimension; col++) {
-            Casilla* casilla = (*filaPtr) + col;
+            Casilla* casilla = (*filaPtr) + col; //casilla apunta a la casilla actual
 
             if (casilla->esMina)
-                continue;
+                continue; //si es mina no calcula minas vecinas
 
-            int contador = 0;
+            int contador = 0; //inicializa el contador de minas vecinas para la casilla dada
 
-            for (int desplazFila = -1; desplazFila <= 1; desplazFila++) {
+            for (int desplazFila = -1; desplazFila <= 1; desplazFila++) {//recorre las 8 posiciones vecinas, arriba, abajo, izq, der y diagonales
                 for (int desplazarCol = -1; desplazarCol <= 1; desplazarCol++) {
 
                     if (desplazFila == 0 && desplazarCol == 0)
                         continue;
 
-                    int nuevaFila = fila + desplazFila;
+                    int nuevaFila = fila + desplazFila;  //calcula la posicion de la casilla vecina
                     int nuevaCol = col + desplazarCol;
 
-                    if (nuevaFila >= 0 && nuevaFila < juego->dimension &&
+                    if (nuevaFila >= 0 && nuevaFila < juego->dimension && //verifica que este dentro de limites
                         nuevaCol >= 0 && nuevaCol < juego->dimension) {
 
                         Casilla** nuevaFilaPtr = juego->tablero + nuevaFila;
                         Casilla* vecino = (*nuevaFilaPtr) + nuevaCol;
 
-                        if (vecino->esMina)
+                        if (vecino->esMina) //si la casilla vecina es una mina suma 1 al contador
                             contador++;
                     }
                 }
@@ -177,20 +186,20 @@ void calcularMinasVecinas(Juego* juego) {
 void revelarCasillaSinMina(Juego* juego, int fila, int col) {
 
     if (fila < 0 || fila >= juego->dimension || col < 0 || col >= juego->dimension)
-        return;
+        return; //si la posicion ta fuera del tablero no hace nada
 
-    Casilla** filaPtr = juego->tablero + fila;
+    Casilla** filaPtr = juego->tablero + fila; //obtiene puntero a la casilla actual
     Casilla* casilla = (*filaPtr) + col;
 
-    if (casilla->revelada || casilla->marcada)
+    if (casilla->revelada || casilla->marcada) //si la casilla ya esta revelada o marcada no la procesa de nuevo
         return;
 
-    casilla->revelada = true;
+    casilla->revelada = true;//revela la casilla
 
-    if (casilla->minasVecinas > 0)
+    if (casilla->minasVecinas > 0) //si la casilla tiene al menos una mina vecina, termina
         return;
 
-    for (int desplazarFila = -1; desplazarFila <= 1; desplazarFila++) {
+    for (int desplazarFila = -1; desplazarFila <= 1; desplazarFila++) { // si la casilla no tiene minas vecinas, recorre las 8 posiciones vecinas, y llama recursivamente a la funcion para cada casilla vecina.
         for (int desplazarCol = -1; desplazarCol <= 1; desplazarCol++) {
             if (desplazarFila == 0 && desplazarCol == 0)
                 continue;
@@ -255,7 +264,7 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
     }
 
     juego.tamCasilla = calcularTamCasilla(dimension);
-    juego.tamPixel = juego.tamCasilla / 8;
+    //juego.tamPixel = juego.tamCasilla / 8;
     juego.minasMarcadas = 0;
     juego.finalizado = false;
     juego.minasColocadas = false;
@@ -298,15 +307,19 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     chequearError(iniciarLog(), NO_SE_PUDO_CREAR_LOG);
     chequearError(registrarEvento("INICIO", -1, -1, -1), ERROR_LOG_ESCRITURA);
     juego->tiempoInicio = SDL_GetTicks();
+
+    //cheat
     int clicksCheat = 0;
     int usosRestantesCheat = obtenerMaximoUsosCheat(dificultad);
     bool cheatEnUso = false;
     Uint32 cheatActivadoTiempo = 0;
 
+    //tam ventana segun tablero
     int anchoVentana = juego->tamCasilla * juego->dimension;
     int altoVentana  = escalado.paddingSuperior + juego->tamCasilla * juego->dimension;
     SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
-    calcularEscaladoUI(&escalado, anchoVentana, altoVentana);
+    calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+
 
     SDL_Event evento;
     bool ejecutando = true;
@@ -315,12 +328,15 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
             if (evento.type == SDL_QUIT) {
                 ejecutando = false;
             }
+            //si se detecta clck y juego no termino
             else if (evento.type == SDL_MOUSEBUTTONDOWN && !juego->finalizado && juego->tablero != NULL){
                 int x = evento.button.x;
                 int y = evento.button.y;
                 int centroX = anchoVentana / 2;
                 int centroY = escalado.paddingSuperior / 2;
                 int tamanioBoton = 50;
+
+                //se fija si fue en el centro del hud el click para ver si esta activando el cheat
                 if (x >= centroX - tamanioBoton/2 && x <= centroX + tamanioBoton/2 && y >= centroY - tamanioBoton/2 && y <= centroY + tamanioBoton/2) {
                     if (juego->minasColocadas && usosRestantesCheat > 0) {
                         clicksCheat++;
@@ -333,28 +349,31 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                     }
                     break;
                 }
+                //si el click fue en el tablero
                 if (y >= escalado.paddingSuperior) {
                     int fila = (y - escalado.paddingSuperior) / juego->tamCasilla;
                     int col = x / juego->tamCasilla;
-                    if (evento.button.button == SDL_BUTTON_LEFT) {
-                        if (!juego->minasColocadas) {
+                    if (evento.button.button == SDL_BUTTON_LEFT) { //click izq
+                        if (!juego->minasColocadas) { //si no tiene las minas las coloca
                             llenar(juego, fila, col);
                             calcularMinasVecinas(juego);
                         }
                         Casilla* casilla = &juego->tablero[fila][col];
-                        if (!casilla->revelada && !casilla->marcada) {
-                            if (casilla->esMina) {
+                        if (!casilla->revelada && !casilla->marcada) { //si la casilla no esta revelada ni marcada
+                            if (casilla->esMina) { //y es mina, termina el juego 
                                 casilla->revelada = true;
                                 juego->finalizado = true;
                                 juego->tiempoFin = SDL_GetTicks();
                                 juego->minaExplotadaFila = fila;
                                 juego->minaExplotadaCol = col;
+                                //dermarca todas las flags y esferas
                                 for (int i = 0; i < juego->dimension; i++) {
                                     for (int j = 0; j < juego->dimension; j++) {
                                         Casilla* c = &juego->tablero[i][j];
                                         if (c->marcada) { c->marcada = false; c->esfera = 0; }
                                     }
                                 }
+                                //asign esferas aleatorias a las minas para la animacion de perder
                                 srand(SDL_GetTicks());
                                 for (int i = 0; i < juego->dimension; i++) {
                                     for (int j = 0; j < juego->dimension; j++) {
@@ -362,19 +381,25 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                                         if (c->esMina) { c->esferaAlPerder = (rand() % 7) + 1; }
                                     }
                                 }
+                                //perdiste
                                 mostrarPantallaFin(renderer, juego, false);
                             } else if (casilla->minasVecinas == 0) {
+                                //si no tiene minas vecinas revela en cascada
                                 revelarCasillaSinMina(juego, fila, col);
                             } else {
+                                //sino, solo la revela
                                 casilla->revelada = true;
                             }
+                            //si gano la partida despues de este click marca como finalizado y guarda
                             if (ganoLaPartida(juego) && !juego->finalizado) {
                                 juego->finalizado = true;
                                 juego->tiempoFin = SDL_GetTicks();
                             }
                         }
+                        //registra el evento en el log
                         chequearError(registrarEvento("CLICK_IZQUIERDO", fila, col, casilla->minasVecinas), ERROR_LOG_ESCRITURA);
                     }
+                    //click derecho /marca o desmarca
                     if (evento.button.button == SDL_BUTTON_RIGHT) {
                         Casilla* casilla = &juego->tablero[fila][col];
                         if (!casilla->revelada) {
@@ -389,8 +414,10 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                                 casilla->esfera = 0;
                                 juego->minasMarcadas--;
                             }
+                            //registra el evento en el log
                             chequearError(registrarEvento("CLICK_DERECHO", fila, col, casilla->esfera), ERROR_LOG_ESCRITURA);
 
+                            //si gano la partida despues del click termina
                             if (ganoLaPartida(juego) && !juego->finalizado) {
                                 juego->finalizado = true;
                                 juego->tiempoFin = SDL_GetTicks();
@@ -401,14 +428,20 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                 }
             }
         }
+        //determina si el cheat esta activo
         bool cheatEnPeriodoActivo = (cheatEnUso && (SDL_GetTicks() - cheatActivadoTiempo) <= DURACION_CHEAT_MS);
+
+        //dibuja tablero e interfaz
         dibujarTablero(renderer, juego, fuenteTexto, fuenteHUD, clicksCheat, cheatEnPeriodoActivo, cheatActivadoTiempo);
+
+        //si termino el periodo del cheat lo desactiva
         if (!cheatEnPeriodoActivo) { cheatEnUso = false; }
         SDL_Delay(16);
     }
     registrarEvento("FIN", -1, -1, -1);
     const char* nombresDificultad[] = {"FACIL", "MEDIO", "DIFICIL", "SSJ", "CUSTOM", "VOLVER"};
 
+    //si gano, acutaliza estadisticas
     if (ganoLaPartida(juego)) {
         int tiempoSegundos = (juego->tiempoFin - juego->tiempoInicio) / 1000;
         actualizarEstadisticas(nombresDificultad[dificultad], nombreUsuario, tiempoSegundos);

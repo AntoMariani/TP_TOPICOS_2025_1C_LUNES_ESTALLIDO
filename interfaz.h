@@ -29,9 +29,8 @@ void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFon
 opcionesMenuPrincipal mostrarMenuPrincipal(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);
 opcionesMenuTipoPartida mostrarMenuTipoPartida(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);
 opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);
-void pedirNombreUsuario(SDL_Renderer* renderer, TTF_Font* fuente, char* nombreUsuario);
 opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, char* nombreUsuario);
-bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuPrincipal* opcionMenu,opcionesMenuTipoPartida* tipoPartida,opcionesMenuDificultad* dificultad,char* nombreJugador);
+bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMenuPrincipal* opcionPrincipal,opcionesMenuTipoPartida* opcionTipo,opcionesMenuDificultad* dificultad,char nombreUsuario[MAX_NOMBRE]);
 
 void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano);
 

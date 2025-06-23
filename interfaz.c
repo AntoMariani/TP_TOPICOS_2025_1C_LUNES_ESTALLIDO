@@ -237,63 +237,67 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     SDL_RenderPresent(renderer);
 }
 
-void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego)
+void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego) 
 {
-    for (int fila = 0; fila < juego->dimension; fila++) {
+    for (int fila = 0; fila < juego->dimension; fila++) { //recorre filas y columnas del tablero
         for (int col = 0; col < juego->dimension; col++) {
-            Casilla* casilla = &juego->tablero[fila][col];
-            if (casilla->esMina && !casilla->marcada) {
-                SDL_Rect destino = {
-                    col * juego->tamCasilla,
-                    escalado.paddingSuperior + fila * juego->tamCasilla,
-                    juego->tamCasilla,
-                    juego->tamCasilla
+            Casilla* casilla = &juego->tablero[fila][col]; //puntero a casilla actual
+            if (casilla->esMina && !casilla->marcada) { //si es mina y no esta marcada, dibuja un rectangulo semi-transparente
+                SDL_Rect destino = { 
+                    col * juego->tamCasilla, //x
+                    escalado.paddingSuperior + fila * juego->tamCasilla, //y teniendo en cuenta padding de hud
+                    juego->tamCasilla, //w
+                    juego->tamCasilla //h
                 };
-                SDL_SetRenderDrawColor(renderer, 255, 180, 0, 200);
+                SDL_SetRenderDrawColor(renderer, 255, 180, 0, 200); //es naranja transparente
                 printf("Pintando cheat en fila=%d col=%d\n", fila, col);
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); //permitimos transparencia
                 SDL_RenderFillRect(renderer, &destino);
-                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+                SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE); //resetea draw blend
             }
         }
     }
 }
 
-
-void dibujarFigura(SDL_Renderer* renderer, const int figura[8][8], int fila, int col,int tamPixel) {
-    SDL_Rect pixel;
-    pixel.w = tamPixel;
-    pixel.h = tamPixel;
-
-    int offsetX = col * tamPixel * 8;
-    int offsetY = escalado.paddingSuperior + fila * tamPixel * 8;
-
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            int colorIndex = figura[i][j];
-            SDL_Color color = colores[colorIndex];
-            SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-            pixel.x = offsetX + j * tamPixel;
-            pixel.y = offsetY + i * tamPixel;
-            SDL_RenderFillRect(renderer, &pixel);
-        }
-    }
-}
+//funcion que se usaba antes
+//void dibujarFigura(SDL_Renderer* renderer, const int figura[8][8], int fila, int col,int tamPixel) {
+//    SDL_Rect pixel;
+//    pixel.w = tamPixel;
+//    pixel.h = tamPixel;
+//
+//    int offsetX = col * tamPixel * 8;
+//    int offsetY = escalado.paddingSuperior + fila * tamPixel * 8;
+//
+//    for (int i = 0; i < 8; i++) {
+//        for (int j = 0; j < 8; j++) {
+//            int colorIndex = figura[i][j];
+//            SDL_Color color = colores[colorIndex];
+//            SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+//            pixel.x = offsetX + j * tamPixel;
+//            pixel.y = offsetY + i * tamPixel;
+//            SDL_RenderFillRect(renderer, &pixel);
+//        }
+//    }
+//}
 
 void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFondo) {
-    SDL_SetRenderDrawColor(renderer, colorFondo.r, colorFondo.g, colorFondo.b, colorFondo.a);
-    SDL_RenderFillRect(renderer, &rect);
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, colorFondo.r, colorFondo.g, colorFondo.b, colorFondo.a); //color
+    SDL_RenderFillRect(renderer, &rect); //rellena de ese color
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); //configura color de dibujo para el borde
+    SDL_RenderDrawRect(renderer, &rect); //dibuna borde
 }
 
+//funcion p dibujar texto centrado dentro de botones
 void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, SDL_Rect rect, SDL_Color colorTexto) {
+
+    //crea surface texto
     SDL_Surface* surfaceTexto = TTF_RenderText_Blended(fuente, texto, colorTexto);
     if (!surfaceTexto) {
         printf("Error renderizando texto: %s\n", TTF_GetError());
         return;
     }
 
+    //crea texture desde la surface
     SDL_Texture* textureTexto = SDL_CreateTextureFromSurface(renderer, surfaceTexto);
     if (!textureTexto) {
         printf("Error creando textura de texto: %s\n", SDL_GetError());
@@ -301,6 +305,8 @@ void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, S
         return;
     }
 
+    //calcula el rectangulo de destino para centrarlo
+    //rect.x posicion inicial, rect.w ancho del rect, surfaceTexto->w ancho del texto, rect.y posicion inicial, rect.h alto del rect, surfaceTexto->h alto del texto
     SDL_Rect destino = {
         rect.x + (rect.w - surfaceTexto->w) / 2,
         rect.y + (rect.h - surfaceTexto->h) / 2,
@@ -314,47 +320,75 @@ void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, S
 }
 
 opcionesMenuPrincipal mostrarMenuPrincipal(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente) {
+
+    //algo que costo mucho que entendamos fue: por que dibujamos y etc despues de procesar eventos?
+    //porque el bucle de eventos y de dibujo son dos cosas separadas, y por convención siempre se usa ese orden
+    //primero procesas eventos (sabes si el usuario hizo click, cerro ventana, movio mouse, etc).
+    //y después dibujas la pantalla. Si lo hicieras al revés podes estar dibujando cosas que el usuario ya cambió.
+
+    //eventos y flag control menu
     SDL_Event evento;
     bool salir = false;
 
-    int cantidadBotones = 3;
+    //cantidad de botones a mostrar y su posicion
+    int cantidadBotones = 3; //JUGAR, ESTADISTICAS, SALIR
+
+    //altototal = alto de todos los botones + espacio vertical entre botones (en este caso si hay 3 bot, hay 2 espacios entre ellos porque 3 - 1 = 2).
     int altoTotal = cantidadBotones * escalado.botonAlto + (cantidadBotones - 1) * escalado.espaciadoVertical;
+
+    //centra botones:
+    //clacula el alto disp para botones, descontando el margen superior y resta el alto de los botones al alto disponible. Divide ese espacio sobrante / 2 para que quede por arriba y por debajo de los botones.
     int inicioY = escalado.margenInicialY + (escalado.altoVentanaMenu - escalado.margenInicialY - altoTotal) / 2;
 
+
+    //x, y, h, w de los botones
     SDL_Rect botonJugar = { (escalado.anchoVentanaMenu - escalado.botonAncho) / 2, inicioY, escalado.botonAncho, escalado.botonAlto };
     SDL_Rect botonEstadisticas = { botonJugar.x, inicioY + escalado.botonAlto + escalado.espaciadoVertical, escalado.botonAncho, escalado.botonAlto };
     SDL_Rect botonSalir = { botonEstadisticas.x, inicioY + 2*(escalado.botonAlto + escalado.espaciadoVertical), escalado.botonAncho, escalado.botonAlto };
 
     while (!salir) {
-        while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT)
-                return OPCION_PRINCIPAL_SALIR;
-            else if (evento.type == SDL_MOUSEBUTTONDOWN) {
+        while (SDL_PollEvent(&evento)) { //mientras no se salga del menu procesa events
+            if (evento.type == SDL_QUIT) //si el usuario cierra la ventana sale del juego
+                exit(0);
+            else if (evento.type == SDL_MOUSEBUTTONDOWN) { //cuando hace click obtiene DONDE ahce click
                 int x = evento.button.x, y = evento.button.y;
 
-                if (x >= botonJugar.x && x <= botonJugar.x + escalado.botonAncho && y >= botonJugar.y && y <= botonJugar.y + escalado.botonAlto)
+                //usa los limites de los botones para ver si corresponden las coordenadas
+                if (x >= botonJugar.x 
+                    && x <= botonJugar.x + escalado.botonAncho
+                    && y >= botonJugar.y 
+                    && y <= botonJugar.y + escalado.botonAlto)
                     return OPCION_PRINCIPAL_JUGAR;
 
-                if (x >= botonEstadisticas.x && x <= botonEstadisticas.x + escalado.botonAncho && y >= botonEstadisticas.y && y <= botonEstadisticas.y + escalado.botonAlto)
+                if (x >= botonEstadisticas.x 
+                    && x <= botonEstadisticas.x + escalado.botonAncho 
+                    && y >= botonEstadisticas.y 
+                    && y <= botonEstadisticas.y + escalado.botonAlto)
                     return OPCION_PRINCIPAL_ESTADISTICAS;
 
-                if (x >= botonSalir.x && x <= botonSalir.x + escalado.botonAncho && y >= botonSalir.y && y <= botonSalir.y + escalado.botonAlto)
+                if (x >= botonSalir.x 
+                    && x <= botonSalir.x + escalado.botonAncho 
+                    && y >= botonSalir.y 
+                    && y <= botonSalir.y + escalado.botonAlto)
                     return OPCION_PRINCIPAL_SALIR;
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-        SDL_RenderClear(renderer);
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255); //dibuja fondo fris oscuro
+        SDL_RenderClear(renderer); //limpia pantalla
 
-        int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES;
-        dibujarLogo(renderer, ventana, frameLogo);
+        int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES; //cada 300ms cambia frame del logo
+        dibujarLogo(renderer, ventana, frameLogo); //dibuja el logo en la ventana
 
+        //definimos colores
         SDL_Color fondo = {70,70,70,255}, texto = {255,255,255,255};
 
+        //definimos botones
         dibujarBotonPlano(renderer, botonJugar, fondo);
         dibujarBotonPlano(renderer, botonEstadisticas, fondo);
         dibujarBotonPlano(renderer, botonSalir, fondo);
 
+        //dibujamos texto
         dibujarTexto(renderer, fuente, "JUGAR", botonJugar, texto);
         dibujarTexto(renderer, fuente, "ESTADISTICAS", botonEstadisticas, texto);
         dibujarTexto(renderer, fuente, "SALIR", botonSalir, texto);
@@ -381,7 +415,7 @@ opcionesMenuTipoPartida mostrarMenuTipoPartida(SDL_Renderer* renderer, SDL_Windo
     while (!salir) {
         while (SDL_PollEvent(&evento)) {
             if (evento.type == SDL_QUIT)
-                return OPCION_PARTIDA_MENU_PRINCIPAL;
+                exit(0);
             else if (evento.type == SDL_MOUSEBUTTONDOWN) {
                 int x = evento.button.x, y = evento.button.y;
 
@@ -447,7 +481,7 @@ opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window*
     while (!salir) {
         while (SDL_PollEvent(&evento)) {
             if (evento.type == SDL_QUIT)
-                return DIFICULTAD_VOLVER;
+                exit(0);
             else if (evento.type == SDL_MOUSEBUTTONDOWN) {
                 int x = evento.button.x, y = evento.button.y;
 
@@ -494,69 +528,78 @@ opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window*
         dibujarTexto(renderer, fuente, "VOLVER", botonVolver, texto);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        SDL_Delay(16); //espera 16ms para no saturar el CPU, lo vimos varias veces en tutoriales asi que decidimos sumarlo
     }
     return DIFICULTAD_VOLVER;
 }
 
-void pedirNombreUsuario(SDL_Renderer* renderer, TTF_Font* fuente, char* nombreUsuario) {
-    SDL_StartTextInput();
-
-    nombreUsuario[0] = '\0';
-    int salir = 0;
-    SDL_Event evento;
-
-    while (!salir) {
-        while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) {
-                exit(0);
-            }
-            if (evento.type == SDL_TEXTINPUT) {
-                if (strlen(nombreUsuario) < MAX_NOMBRE - 1) {
-                    strcat(nombreUsuario, evento.text.text);
-                }
-            }
-            if (evento.type == SDL_KEYDOWN) {
-                if (evento.key.keysym.sym == SDLK_BACKSPACE && strlen(nombreUsuario) > 0) {
-                    nombreUsuario[strlen(nombreUsuario) - 1] = '\0';
-                }
-                if (evento.key.keysym.sym == SDLK_RETURN && strlen(nombreUsuario) > 0) {
-                    salir = 1;
-                }
-            }
-        }
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        SDL_Color color = {255, 255, 255, 255};
-
-        SDL_Surface* superficieTexto = TTF_RenderText_Blended(fuente, "Ingrese su nombre:", color);
-        SDL_Texture* texturaTexto = SDL_CreateTextureFromSurface(renderer, superficieTexto);
-        SDL_Rect rect = {100, 100, superficieTexto->w, superficieTexto->h};
-        SDL_RenderCopy(renderer, texturaTexto, NULL, &rect);
-        SDL_FreeSurface(superficieTexto);
-        SDL_DestroyTexture(texturaTexto);
-
-        superficieTexto = TTF_RenderText_Blended(fuente, nombreUsuario, color);
-        texturaTexto = SDL_CreateTextureFromSurface(renderer, superficieTexto);
-        rect.y = 200;
-        rect.w = superficieTexto->w;
-        rect.h = superficieTexto->h;
-        SDL_RenderCopy(renderer, texturaTexto, NULL, &rect);
-        SDL_FreeSurface(superficieTexto);
-        SDL_DestroyTexture(texturaTexto);
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16);
-    }
-
-    SDL_StopTextInput();
-}
+//void pedirNombreUsuario(SDL_Renderer* renderer, TTF_Font* fuente, char* nombreUsuario) {
+//
+//    SDL_StartTextInput(); //habilitamos texto
+//
+//    nombreUsuario[0] = '\0'; //inicializamos el nombre de usuario como una cadena vacía
+//    int salir = 0; //flag salida
+//    SDL_Event evento; 
+//
+//    while (!salir) {
+//        while (SDL_PollEvent(&evento)) {
+//            if (evento.type == SDL_QUIT) {
+//                exit(0);
+//            }
+//            if (evento.type == SDL_TEXTINPUT) {
+//                if (strlen(nombreUsuario) < MAX_NOMBRE - 1) {
+//                    strcat(nombreUsuario, evento.text.text); //copia lo que entro el usuario, concatena al final mientras tenga <5 caracteres
+//                }
+//            }
+//            if (evento.type == SDL_KEYDOWN) { //si apreta borrar y el nombre no esta vacio borra 1 caracter, si le da enter y el nombre no esta vacio confirma el nombre
+//                if (evento.key.keysym.sym == SDLK_BACKSPACE && strlen(nombreUsuario) > 0) {
+//                    nombreUsuario[strlen(nombreUsuario) - 1] = '\0'; //strlen(nombreUsuario) - 1 es el ultimo caracter, lo pone en 0 para borrar
+//                }
+//                if (evento.key.keysym.sym == SDLK_RETURN && strlen(nombreUsuario) > 0) { // si presiono enter se fija si escribi 1 caracter por lo menos y sale del bucle
+//                    salir = 1;
+//                }
+//            }
+//        }
+//
+//        //limpia pantalla a negro 
+//        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+//        SDL_RenderClear(renderer);
+//
+//
+//        //color blanco texto
+//        SDL_Color color = {255, 255, 255, 255};
+//
+//        //dibuja ingrese su nombre (idem otros surfaces y textures) y libera memoria
+//        SDL_Surface* superficieTexto = TTF_RenderText_Blended(fuente, "Ingrese su nombre:", color);
+//        SDL_Texture* texturaTexto = SDL_CreateTextureFromSurface(renderer, superficieTexto);
+//        SDL_Rect rect = {100, 100, superficieTexto->w, superficieTexto->h};
+//        SDL_RenderCopy(renderer, texturaTexto, NULL, &rect);
+//        SDL_FreeSurface(superficieTexto);
+//        SDL_DestroyTexture(texturaTexto);
+//
+//
+//        //dibuja el nombre que el user escribe y va liberando mem
+//        superficieTexto = TTF_RenderText_Blended(fuente, nombreUsuario, color);
+//        texturaTexto = SDL_CreateTextureFromSurface(renderer, superficieTexto);
+//        rect.y = 200;
+//        rect.w = superficieTexto->w;
+//        rect.h = superficieTexto->h;
+//        SDL_RenderCopy(renderer, texturaTexto, NULL, &rect);
+//        SDL_FreeSurface(superficieTexto);
+//        SDL_DestroyTexture(texturaTexto);
+//
+//        //actualiza pantalla
+//        SDL_RenderPresent(renderer);
+//        SDL_Delay(16);
+//    }
+//
+//    //frena el input
+//    SDL_StopTextInput();
+//}
 
 opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, char* nombreUsuario)
 {
-    printf("ENTRE AL MENU NICKNAME\n");
+    //printf("ENTRE AL MENU NICKNAME\n");
 
     SDL_StartTextInput();
 
@@ -565,6 +608,7 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
     bool salir = false;
     opcionesMenuNickname resultado = OPCION_NICKNAME_VOLVER;
 
+    //bloques: titulo, campo texto, botones JUGAR y VOLVER
     int cantidadBloques = 3;
     int altoTotal = cantidadBloques * escalado.botonAlto + (cantidadBloques - 1) * escalado.espaciadoVertical;
     int inicioY = escalado.margenInicialY + (escalado.altoVentanaMenu - escalado.margenInicialY - altoTotal) / 2;
@@ -733,10 +777,10 @@ void dibujarLogo(SDL_Renderer* renderer, SDL_Window* ventana, int frameLogo)
 
 void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano)
 {
-    Uint32 tiempoInicio = SDL_GetTicks();
-    Uint32 duracion = 2000;
+    Uint32 tiempoInicio = SDL_GetTicks();  //tiempo actual
+    Uint32 duracion = 2000; //duracion de la pantalla de fin en milisegundos
 
-    while (SDL_GetTicks() - tiempoInicio < duracion)
+    while (SDL_GetTicks() - tiempoInicio < duracion) //dura 2 segs mientras no salga
     {
         SDL_Event evento;
         while (SDL_PollEvent(&evento))
@@ -745,16 +789,20 @@ void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano)
                 exit(0);
         }
 
+        //dibuja un fondo oscuro sobre todo el tablero y el HUD con el mensaje GANASTE o PERDISTE segun corresponda
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_Rect overlay = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior + juego->tamCasilla * juego->dimension };
-        SDL_RenderFillRect(renderer, &overlay);
 
+        //crea un rectangulo overlay que cubre toda la pantalla y hud, empieza borde izquierdo y borde superior y toma todo el ancho del tablero, luego toma el padding superior mas dimensiones y toma todo el alto
+        SDL_Rect overlay = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior + juego->tamCasilla * juego->dimension };
+        SDL_RenderFillRect(renderer, &overlay); 
+
+        //texto superpuesto
         const char* texto = gano ? ":) GANASTE" : " :( PERDISTE";
         SDL_Color colorTexto = {255, 150, 0, 255};
         SDL_Surface* sTexto = TTF_RenderText_Blended(fuenteHUD, texto, colorTexto);
         SDL_Texture* tTexto = SDL_CreateTextureFromSurface(renderer, sTexto);
-        SDL_Rect rectTexto = {
+        SDL_Rect rectTexto = { //centra texto
             (overlay.w - sTexto->w) / 2,
             (overlay.h - sTexto->h) / 2,
             sTexto->w,
@@ -768,7 +816,6 @@ void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano)
         SDL_Delay(16);
     }
 }
-
 
 
 void liberarTodo(SDL_Renderer* renderer, SDL_Window* ventana)

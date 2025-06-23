@@ -1,40 +1,47 @@
 #include "estadisticas.h"
 
+// Lee las estadísticas desde el archivo y las guarda en el array stats[].
+// Devuelve la cantidad de registros leídos (máximo maxStats).
 int leerEstadisticas(Estadistica stats[], int maxStats) {
-    FILE* f = fopen("estadisticas.txt", "r");
-    if (!f) return 0;
+    FILE* f = fopen("estadisticas.txt", "r"); // Abre el archivo en modo lectura
+    if (!f) return 0; // Si no existe, retorna 0
 
     int count = 0;
+    // Lee cada línea con formato: dificultad;usuario;tiempo
     while (fscanf(f, "%15[^;];%15[^;];%d\n",
                   stats[count].dificultad,
                   stats[count].usuario,
                   &stats[count].tiempoSegundos) == 3) {
         count++;
-        if (count >= maxStats) break;
+        if (count >= maxStats) break; // No lee más de maxStats registros
     }
     fclose(f);
-    return count;
+    return count; // Devuelve la cantidad de registros leídos
 }
 
+// Actualiza las estadísticas agregando un nuevo registro y manteniendo el ranking ordenado
 void actualizarEstadisticas(const char* dificultad, const char* nombre, int tiempo) {
     Estadistica todas[MAX_ESTAD_TOTALES];
-    int total = leerEstadisticas(todas, MAX_ESTAD_TOTALES);
+    int total = leerEstadisticas(todas, MAX_ESTAD_TOTALES); // Lee todas las estadísticas existentes
 
     Estadistica nivel[MAX_ESTAD_TOTALES];
     int nivel_count = 0;
 
+    // Filtra solo las estadísticas de la dificultad actual
     for (int i = 0; i < total; i++) {
         if (strcmp(todas[i].dificultad, dificultad) == 0) {
             nivel[nivel_count++] = todas[i];
         }
     }
 
+    // Agrega la nueva estadística
     Estadistica nueva;
     strcpy(nueva.dificultad, dificultad);
     strcpy(nueva.usuario, nombre);
     nueva.tiempoSegundos = tiempo;
     nivel[nivel_count++] = nueva;
 
+    // Ordena las estadísticas de la dificultad actual por tiempo (menor a mayor)
     for (int i = 0; i < nivel_count - 1; i++) {
         for (int j = i + 1; j < nivel_count; j++) {
             if (nivel[j].tiempoSegundos < nivel[i].tiempoSegundos) {
@@ -45,21 +52,24 @@ void actualizarEstadisticas(const char* dificultad, const char* nombre, int tiem
         }
     }
 
+    // Limita la cantidad de registros a MAX_ESTADISTICAS
     if (nivel_count > MAX_ESTADISTICAS)
         nivel_count = MAX_ESTADISTICAS;
 
-    FILE* f = fopen("estadisticas.txt", "w");
+    FILE* f = fopen("estadisticas.txt", "w"); // Abre el archivo para sobrescribirlo
     if (!f) {
         printf("Error guardando estadisticas!\n");
         return;
     }
 
+    // Escribe las estadísticas de otras dificultades (no la actual)
     for (int i = 0; i < total; i++) {
         if (strcmp(todas[i].dificultad, dificultad) != 0) {
             fprintf(f, "%s;%s;%d\n", todas[i].dificultad, todas[i].usuario, todas[i].tiempoSegundos);
         }
     }
 
+    // Escribe las mejores estadísticas de la dificultad actual (ordenadas)
     for (int i = 0; i < nivel_count; i++) {
         fprintf(f, "%s;%s;%d\n", nivel[i].dificultad, nivel[i].usuario, nivel[i].tiempoSegundos);
     }
@@ -67,16 +77,20 @@ void actualizarEstadisticas(const char* dificultad, const char* nombre, int tiem
     fclose(f);
 }
 
+// Muestra la pantalla de estadísticas con los rankings por dificultad
 void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuenteTexto, TTF_Font* fuenteHUD)
 {
     SDL_Event evento;
     bool salir = false;
 
+    // Nombres de las dificultades
     const char* dificultades[] = {"FACIL", "MEDIO", "DIFICIL", "SSJ"};
 
+    // Ranking: para cada dificultad, guarda hasta MAX_ENTRADAS
     EntradaRanking ranking[4][MAX_ENTRADAS];
     int cantidadPorNivel[4] = {0};
 
+    // Inicializa el ranking con valores por defecto
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < MAX_ENTRADAS; j++) {
             strcpy(ranking[i][j].nombre, "-");
@@ -84,12 +98,13 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
         }
     }
 
+    // Lee el archivo de estadísticas y llena el ranking
     FILE* archivo = fopen("estadisticas.txt", "r");
     if (!archivo) {
         printf("No se pudo abrir el archivo de estadísticas.\n");
         return;
     }
-
+    
     char linea[256];
     while (fgets(linea, sizeof(linea), archivo))
     {
@@ -97,6 +112,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
         int tiempo;
         sscanf(linea, "%[^;];%[^;];%d", nivel, nombre, &tiempo);
 
+        // Busca a qué dificultad corresponde y lo agrega al ranking
         for (int i = 0; i < 4; i++)
         {
             if (strcmp(nivel, dificultades[i]) == 0)
@@ -112,14 +128,17 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
     }
     fclose(archivo);
 
+    // Define el botón "VOLVER"
     SDL_Rect botonVolver = { 
         (escalado.anchoVentanaMenu - escalado.botonAncho) / 2, 
         escalado.altoVentanaMenu - (int)(escalado.botonAlto * 1.6f),
         escalado.botonAncho, escalado.botonAlto 
     };
 
+    // Bucle principal de la pantalla de estadísticas
     while (!salir)
         {
+            // Procesa eventos (cerrar ventana o click en "VOLVER")
             while (SDL_PollEvent(&evento))
             {
                 if (evento.type == SDL_QUIT)
@@ -136,12 +155,14 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
                 }
             }
 
+            // Limpia la pantalla
             SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
             SDL_RenderClear(renderer);
 
             SDL_Color colorNaranja = {255, 150, 0, 255};
             SDL_Color textoColor = {255, 255, 255, 255};
 
+            // Calcula tamaños y posiciones para los textos
             int alturaTitulo = (int)(30 * escalado.escalaGlobal);
             int alturaRegistro = (int)(22 * escalado.escalaGlobal);
             int espacioEntreNiveles = (int)(16 * escalado.escalaGlobal);
@@ -156,6 +177,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
             int margenSuperiorTitulo = (int)(escalado.altoVentanaMenu * 0.06f);
             int posY = margenSuperiorTitulo;
 
+            // Dibuja el título principal "ESTADISTICAS"
             int tamanioTitulo = (int)(escalado.tamanioFuenteTexto * 1.5f);
             TTF_Font* fuenteTitulo = TTF_OpenFont("fnt/DragonBall.ttf", tamanioTitulo);
             SDL_Surface* sTitulo = TTF_RenderText_Blended(fuenteTitulo, "ESTADISTICAS", colorNaranja);
@@ -168,8 +190,10 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
 
             posY += rTitulo.h + (int)(30 * escalado.escalaGlobal);
 
+            // Dibuja los rankings para cada dificultad
             for (int i = 0; i < 4; i++)
             {
+                // Dibuja el nombre de la dificultad
                 SDL_Surface* sDif = TTF_RenderText_Blended(fuenteTexto, dificultades[i], colorNaranja);
                 SDL_Texture* tDif = SDL_CreateTextureFromSurface(renderer, sDif);
                 SDL_Rect rDif = { (escalado.anchoVentanaMenu - sDif->w) / 2, posY, sDif->w, sDif->h };
@@ -179,6 +203,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
 
                 posY += alturaTitulo;
 
+                // Dibuja cada entrada del ranking
                 for (int j = 0; j < MAX_ENTRADAS; j++)
                 {
                     char buffer[64];
@@ -200,10 +225,11 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
                 posY += espacioEntreNiveles;
             }
 
+            // Dibuja el botón "VOLVER"
             dibujarBotonPlano(renderer, botonVolver, (SDL_Color){70,70,70,255});
             dibujarTexto(renderer, fuenteTexto, "VOLVER", botonVolver, textoColor);
 
+            // Actualiza la pantalla
             SDL_RenderPresent(renderer);
-            SDL_Delay(16);
         }
 }

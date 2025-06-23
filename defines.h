@@ -1,7 +1,7 @@
 #ifndef DEFINES_H_INCLUDED
 #define DEFINES_H_INCLUDED
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <stdbool.h>
 
 #define MIN_DIMENSION 8
@@ -45,8 +45,8 @@ typedef struct {
     bool revelada;
     bool marcada;
     int minasVecinas;
-    int esfera; 
-    int esferaAlPerder; 
+    int esfera;
+    int esferaAlPerder;
 } Casilla;
 
 typedef struct {
@@ -59,16 +59,16 @@ typedef struct {
     bool minasColocadas;
     Uint32 tiempoInicio;
     Uint32 tiempoFin;
-    Casilla** tablero; 
+    Casilla** tablero;
     int tamCasilla;
     int tamPixel;
-    int cheatNivelActual;  
-    int cheatUsosRestantes; 
-    bool cheatActivo;      
-    Uint32 cheatTiempoInicio;  
+    int cheatNivelActual;
+    int cheatUsosRestantes;
+    bool cheatActivo;
+    Uint32 cheatTiempoInicio;
 } Juego;
 
-typedef enum { 
+typedef enum {
     OPCION_PRINCIPAL_JUGAR,
     OPCION_PRINCIPAL_ESTADISTICAS,
     OPCION_PRINCIPAL_SALIR
@@ -105,7 +105,7 @@ void chequearError(int error, int errorEsperado);
 #define LOGO_FRAMES 2
 
 #define CHEAT_FRAME
-#define DURACION_CHEAT_MS 1500 
+#define DURACION_CHEAT_MS 1500
 #define CHEAT_MAX_FACIL 1
 #define CHEAT_MAX_MEDIO 2
 #define CHEAT_MAX_DIFICIL 3
@@ -115,7 +115,7 @@ void chequearError(int error, int errorEsperado);
 
 #define MAX_NOMBRE 16
 #define MAX_DIFICULTAD 16
-#define MAX_ESTADISTICAS 3 
+#define MAX_ESTADISTICAS 3
 #define MAX_ESTAD_TOTALES 100
 
 

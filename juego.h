@@ -12,7 +12,6 @@
 #include <SDL2/SDL.h>
 #include "interfaz.h"
 
-
 void inicializarJuego(Juego* juego, const char* archivoConfiguracion);
 int calcularTamCasilla(int dimension);
 void llenar(Juego* juego,int filaInicial, int colInicial);

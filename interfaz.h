@@ -25,6 +25,7 @@ void dibujarLogo(SDL_Renderer* renderer, SDL_Window* ventana, int frameLogo);
 void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, SDL_Rect rect, SDL_Color colorTexto);
 void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego);
 void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFondo);
+void obtenerRectBotonesHUD(SDL_Rect* cheat, Juego* juego);
 
 opcionesMenuPrincipal mostrarMenuPrincipal(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);
 opcionesMenuTipoPartida mostrarMenuTipoPartida(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);

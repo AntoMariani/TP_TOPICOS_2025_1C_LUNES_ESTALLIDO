@@ -40,6 +40,7 @@
 #define CY 6 // Rosa
 #define CNH 7 //naranja hud
 
+//estructura juego normal
 typedef struct {
     bool esMina;
     bool revelada;
@@ -49,6 +50,7 @@ typedef struct {
     int esferaAlPerder;
 } Casilla;
 
+//estructura juego normal
 typedef struct {
     int dimension;
     int totalMinas;
@@ -67,6 +69,7 @@ typedef struct {
     bool cheatActivo;
     Uint32 cheatTiempoInicio;
 } Juego;
+
 
 //Un enum (enumeración) es un tipo de dato que permite definir un conjunto de valores constantes con nombre
 //El typedef permite crear un alias para ese tipo facilitando el uso.

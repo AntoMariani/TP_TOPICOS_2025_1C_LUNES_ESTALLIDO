@@ -77,7 +77,7 @@ void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer)
 
     SDL_GetCurrentDisplayMode(0, &displayMode); //obtenemos la res actual del monitor principal, el 0 significa el primer monitor y la guardar en displayMode
 
-    printf("Resolucion: %dx%d\n", displayMode.w, displayMode.h); 
+    printf("Resolucion: %dx%d\n", displayMode.w, displayMode.h);
     //imprimimos la res para ver de ejemplo, TIENE EN CUENTA EL ZOOM por ejemplo mi pantalla esta en 1920 x 1200 al 125% y cambia la res en base a eso
 
     //cargamos nuestras vars de ancho y alto para escalar
@@ -105,18 +105,42 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
     SDL_RenderClear(renderer);
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//HUD
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
     //dibuja el HUD en la barra superior
-    SDL_Rect hud = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior }; //typedef struct SDL_Rect {int x, y; int w, h;} SDL_Rect;
+    SDL_Rect hud = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior };
+    //typedef struct SDL_Rect {int x, y; int w, h;} SDL_Rect;
     //x posicion horizontal izquierda, y posicion vertical superior, w ancho, h alto.
     //x = 0 el rectangulo empieza en el borde izquierdo de la ventana, y = 0 el rectangulo empieza en el borde superior de la ventana
     //w = juego->tamCasilla (tamaño en pixeles de cada casilla) * juego->dimension (cantidad de casillas en una fila o columna)
     //h = escalado.paddingSuperior el alto del rectangulo es el padding superior
 
     //confugura el color de fondo del HUD y lo dibuja
-    SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255); //aca podriamos usar un color definido en colores[], tendriamos que agregarlo, agregar su define y pasarselo asi SDL_SetRenderDrawColor(renderer, colorLCD.r, colorLCD.g, colorLCD.b, colorLCD.a)
+    SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
+    //aca podriamos usar un color definido en colores[], tendriamos que agregarlo, agregar su define y pasarselo asi SDL_SetRenderDrawColor(renderer, colorLCD.r, colorLCD.g, colorLCD.b, colorLCD.a)
     SDL_RenderFillRect(renderer, &hud);
 
+    //////////////////////////////////BOTONES///////////////////////////////////////////////////////
+
+    SDL_Rect botonCheat;
+    obtenerRectBotonesHUD(&botonCheat, juego);
+
     //////////////////////////////////CONTADOR DE MINAS RESTANTES////////////////////////////////////
+
+    //variables para dibujar el contador de minas y para dibujar el timer
+    const int anchoMaxTexto = 60 * escalado.escalaGlobal; //ancho maximo del texto, se escala segun la resolucion
+    int margen = (int)(20 * escalado.escalaGlobal); //margen de 20px desde el borde derecho, se escala segun la resolucion
+    int derecha = juego->tamCasilla * juego->dimension - margen;
+    int izquierda = margen;
+    int paddingSuperior = 10 * escalado.escalaGlobal;
+
     char minasTexto[4]; //para mostrar las minas restantes
     sprintf(minasTexto, "%03d", juego->totalMinas - juego->minasMarcadas); //formatea el texto con las minas restantes, mestra un numero de 3 digitos, rellenando con ceros a la izq
     SDL_Color colorLCD = colores[CNH];
@@ -125,12 +149,12 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     //se tiene que si o si usar una surface para crear una textura con la funcion correspondiente
     // TTF_RenderText_Blended crea una surface con el texto renderizado, el color y la fuente especificados
     SDL_Surface* surfaceMinas = TTF_RenderText_Blended(fuenteHUD, minasTexto, colorLCD);
-    
+
     //conviertimos el surface en RAM  a una textura que puede ser usada por el renderer de SDL para dibujar en pantalla
     SDL_Texture* texturaMinas = SDL_CreateTextureFromSurface(renderer, surfaceMinas);
 
     //define el rectangulo en donde se tiene que dibujar la textura del contador de minas (texto)
-    SDL_Rect rectMinas = {20, 10, surfaceMinas->w, surfaceMinas->h}; //20 y 10 posicion en ventana en px desde izq y desde arriba, ancho y alto del renderizado
+    SDL_Rect rectMinas = {izquierda, paddingSuperior, anchoMaxTexto, surfaceMinas->h}; //20 y 10 posicion en ventana en px desde izq y desde arriba, ancho y alto del renderizado
 
     //aca efectivamente dibuja la textura en la ventan adonde se indica, el null indica que se usa toda la textura
     SDL_RenderCopy(renderer, texturaMinas, NULL, &rectMinas);
@@ -142,43 +166,47 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////TIMER SUPERIOR//////////////////////////////////////////
-    // calcula el tiempo, si el juego ya termino usa el tiempo de fin - inicio divide /1000 para segundos, si el juego esta en curso usa SDL_GetTicks() que devuelve ms dedde que se inciio SDL - tiempoInicio.
+    // calcula el tiempo, si el juego ya termino usa el (tiempo de fin - inicio)/1000 para segundos, si el juego esta en curso usa SDL_GetTicks() que devuelve ms dedde que se inciio SDL - tiempoInicio.
     int segundosTranscurridos = (juego->finalizado) ? (juego->tiempoFin - juego->tiempoInicio) / 1000 : (SDL_GetTicks() - juego->tiempoInicio) / 1000;
 
     //limitamos tiempo a 999
     if (segundosTranscurridos > 999) segundosTranscurridos = 999;
 
     //idem minas
-    char tiempoTexto[4]; 
+    char tiempoTexto[4];
     sprintf(tiempoTexto, "%03d", segundosTranscurridos);
     SDL_Surface* surfaceTiempo = TTF_RenderText_Blended(fuenteHUD, tiempoTexto, colorLCD);
     SDL_Texture* texturaTiempo = SDL_CreateTextureFromSurface(renderer, surfaceTiempo);
-    int anchoVentana = juego->tamCasilla * juego->dimension; //como el temp va a la derecha, tenemos que calcular el ancho de ventana
-    SDL_Rect rectTiempo = {anchoVentana - surfaceTiempo->w - 20, 10, surfaceTiempo->w, surfaceTiempo->h}; // calculamos segun el ancho y el padding, 20 es el padding desde la derecha, 10 es el padding desde arriba
+
+    SDL_Rect rectTiempo = {derecha - anchoMaxTexto,paddingSuperior, anchoMaxTexto, surfaceTiempo->h}; // calculamos segun el ancho y el padding, 20 es el padding desde la derecha, 10 es el padding desde arriba
     SDL_RenderCopy(renderer, texturaTiempo, NULL, &rectTiempo);
     SDL_FreeSurface(surfaceTiempo);
     SDL_DestroyTexture(texturaTiempo);
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////CHEAT//////////////////////////////////////////////
-    //calculamos centro del hud para el boton de cheat, teniendo el cuenta el padding superior
-    int centroX = anchoVentana / 2;
-    int centroY = escalado.paddingSuperior / 2;
-    int tamanioBoton = (int)(50 * escalado.escalaGlobal); // el tamaño del botón se escala según la resolución de pantalla
-    if (tamanioBoton < 35) tamanioBoton = 35; // tamaño mínimo para el botón
-
-    SDL_Rect rectBoton = { centroX - tamanioBoton/2, centroY - tamanioBoton/2, tamanioBoton, tamanioBoton }; 
-    //para que los centros coincidal centroX - tamanioBoton/2
 
     if (cheatEnPeriodoActivo) {
         int frame = (SDL_GetTicks() / 200) % FRAMES_RASTREADOR; //cada 200 ms el valor aumenta en 1, cada 0,2 segs cambia el frame de animacion. % FRAMES_RASTREADOR hace que el valor vuelva a 0 para que haga bucle
-        SDL_RenderCopy(renderer, rastreador_cheat_texturas[frame], NULL, &rectBoton); //PONE EL RASTREADOR EN LUGAR DE LA ESFERA
+        SDL_RenderCopy(renderer, rastreador_cheat_texturas[frame], NULL, &botonCheat); //PONE EL RASTREADOR EN LUGAR DE LA ESFERA
     } else {
         int frameAnimacion = (SDL_GetTicks() / 200) % FRAMES_ESFERAS; //calcula que frame mostrar
         int esferaActual = (clicksCheat % 7); //calcula que esfera mostrar para que sea entre 0 y 6
         if (esferaActual == 0) esferaActual = 1; //si da 0 lo cambia a 1 porque la esfera 0 no existe
-        SDL_RenderCopy(renderer, esferas_texturas[esferaActual][frameAnimacion], NULL, &rectBoton); //dibuja la textura de la esfera correspondiente a esferaActual y el frame de animacion actual frameAnimacion
+        SDL_RenderCopy(renderer, esferas_texturas[esferaActual][frameAnimacion], NULL, &botonCheat); //dibuja la textura de la esfera correspondiente a esferaActual y el frame de animacion actual frameAnimacion
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //coloreo y despues dibujo y despues dibujoTexto
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//TABLERO
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     SDL_Rect celda = {0, 0, juego->tamCasilla, juego->tamCasilla}; //creamos el rectangulo que representa una casilla del tablero empezando en 0,0
 
@@ -228,7 +256,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
         }
     }
 
-    if (juego->minasColocadas && cheatEnPeriodoActivo && !juego->finalizado) { 
+    if (juego->minasColocadas && cheatEnPeriodoActivo && !juego->finalizado) {
         //si el cheat esta activo y las minas ya fueron colocadas, dibuja el overlay de minas
         dibujarOverlayCheat(renderer, juego);
     }
@@ -237,13 +265,13 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     SDL_RenderPresent(renderer);
 }
 
-void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego) 
+void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego)
 {
     for (int fila = 0; fila < juego->dimension; fila++) { //recorre filas y columnas del tablero
         for (int col = 0; col < juego->dimension; col++) {
             Casilla* casilla = &juego->tablero[fila][col]; //puntero a casilla actual
             if (casilla->esMina && !casilla->marcada) { //si es mina y no esta marcada, dibuja un rectangulo semi-transparente
-                SDL_Rect destino = { 
+                SDL_Rect destino = {
                     col * juego->tamCasilla, //x
                     escalado.paddingSuperior + fila * juego->tamCasilla, //y teniendo en cuenta padding de hud
                     juego->tamCasilla, //w
@@ -286,6 +314,26 @@ void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFon
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); //configura color de dibujo para el borde
     SDL_RenderDrawRect(renderer, &rect); //dibuna borde
 }
+
+void obtenerRectBotonesHUD(SDL_Rect* cheat, Juego* juego) {
+    int anchoVentana = juego->tamCasilla * juego->dimension;
+    int centroX = anchoVentana / 2;
+    int centroY = escalado.paddingSuperior / 2;
+
+    int tamanioBoton = (int)(50 * escalado.escalaGlobal);
+    if (tamanioBoton < 35) tamanioBoton = 35;
+
+    //int espacio = (int)(5 * escalado.escalaGlobal);
+
+    *cheat = (SDL_Rect){
+        centroX - tamanioBoton / 2, //d cheat->x - tamanioBoton - espacio, rd cheat->x + tamanioBoton - espacio,
+        centroY - tamanioBoton / 2, //al y de ete
+        tamanioBoton,
+        tamanioBoton
+    };
+
+}
+
 
 //funcion p dibujar texto centrado dentro de botones
 void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, SDL_Rect rect, SDL_Color colorTexto) {
@@ -354,21 +402,21 @@ opcionesMenuPrincipal mostrarMenuPrincipal(SDL_Renderer* renderer, SDL_Window* v
                 int x = evento.button.x, y = evento.button.y;
 
                 //usa los limites de los botones para ver si corresponden las coordenadas
-                if (x >= botonJugar.x 
+                if (x >= botonJugar.x
                     && x <= botonJugar.x + escalado.botonAncho
-                    && y >= botonJugar.y 
+                    && y >= botonJugar.y
                     && y <= botonJugar.y + escalado.botonAlto)
                     return OPCION_PRINCIPAL_JUGAR;
 
-                if (x >= botonEstadisticas.x 
-                    && x <= botonEstadisticas.x + escalado.botonAncho 
-                    && y >= botonEstadisticas.y 
+                if (x >= botonEstadisticas.x
+                    && x <= botonEstadisticas.x + escalado.botonAncho
+                    && y >= botonEstadisticas.y
                     && y <= botonEstadisticas.y + escalado.botonAlto)
                     return OPCION_PRINCIPAL_ESTADISTICAS;
 
-                if (x >= botonSalir.x 
-                    && x <= botonSalir.x + escalado.botonAncho 
-                    && y >= botonSalir.y 
+                if (x >= botonSalir.x
+                    && x <= botonSalir.x + escalado.botonAncho
+                    && y >= botonSalir.y
                     && y <= botonSalir.y + escalado.botonAlto)
                     return OPCION_PRINCIPAL_SALIR;
             }
@@ -539,7 +587,7 @@ opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window*
 //
 //    nombreUsuario[0] = '\0'; //inicializamos el nombre de usuario como una cadena vacía
 //    int salir = 0; //flag salida
-//    SDL_Event evento; 
+//    SDL_Event evento;
 //
 //    while (!salir) {
 //        while (SDL_PollEvent(&evento)) {
@@ -561,7 +609,7 @@ opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window*
 //            }
 //        }
 //
-//        //limpia pantalla a negro 
+//        //limpia pantalla a negro
 //        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 //        SDL_RenderClear(renderer);
 //
@@ -682,7 +730,7 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
         SDL_FreeSurface(surfaceTitulo);
         SDL_DestroyTexture(textureTitulo);
 
-        SDL_SetRenderDrawColor(renderer, 240, 180, 80, 255); 
+        SDL_SetRenderDrawColor(renderer, 240, 180, 80, 255);
         SDL_RenderFillRect(renderer, &rectTexto);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderDrawRect(renderer, &rectTexto);
@@ -795,7 +843,7 @@ void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano)
 
         //crea un rectangulo overlay que cubre toda la pantalla y hud, empieza borde izquierdo y borde superior y toma todo el ancho del tablero, luego toma el padding superior mas dimensiones y toma todo el alto
         SDL_Rect overlay = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior + juego->tamCasilla * juego->dimension };
-        SDL_RenderFillRect(renderer, &overlay); 
+        SDL_RenderFillRect(renderer, &overlay);
 
         //texto superpuesto
         const char* texto = gano ? ":) GANASTE" : " :( PERDISTE";

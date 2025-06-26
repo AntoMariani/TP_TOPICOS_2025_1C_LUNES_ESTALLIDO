@@ -87,6 +87,7 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
             juego->tablero[i][j] = (Casilla){ false, false, false, 0, 0 };
         }
     }
+
 }
 
 
@@ -105,7 +106,7 @@ int calcularTamCasilla(int dimension) { //calcula el tam en piceles de cada casi
         int maxTamPorAlto = MAX_ALTO / dimension;
 
         tam = (maxTamPorAncho < maxTamPorAlto) ? maxTamPorAncho : maxTamPorAlto; //elige el menor de los dos tamaños
-        tam -= tam % 8; 
+        tam -= tam % 8;
     }
 
     return tam;
@@ -224,7 +225,7 @@ bool ganoLaPartida(Juego* juego) {
                     reveladasSinMinas++;
                 if (casilla->marcada)
                     marcasIncorrectas++;
-            } else { 
+            } else {
                 if (casilla->marcada)
                     minasMarcadasCorrectamente++;
             }
@@ -279,12 +280,17 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
         }
     }
 
+    //INICIAR
+
     ejecutarLoopDeJuego(renderer, ventana, &juego, dificultad, nombreUsuario);
 
     SDL_PumpEvents();
     SDL_FlushEvent(SDL_MOUSEBUTTONDOWN);
 
+    //LIBERAR
+
     liberarJuego(&juego);
+
 
     liberarTodosLosRecursos();
     liberarFuentes();
@@ -303,7 +309,8 @@ int obtenerMaximoUsosCheat(opcionesMenuDificultad dificultad) {
 }
 
 
-void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario){
+void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario)
+{
     chequearError(iniciarLog(), NO_SE_PUDO_CREAR_LOG);
     chequearError(registrarEvento("INICIO", -1, -1, -1), ERROR_LOG_ESCRITURA);
     juego->tiempoInicio = SDL_GetTicks();
@@ -322,23 +329,35 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
 
 
     SDL_Event evento;
+
+    //obtener boton
+    SDL_Rect botonCheat;
+    obtenerRectBotonesHUD(&botonCheat, juego);
+
     bool ejecutando = true;
-    while (ejecutando) {
-        while (SDL_PollEvent(&evento)) {
-            if (evento.type == SDL_QUIT) {
+    while (ejecutando)
+    {
+        while (SDL_PollEvent(&evento))
+        {
+            if (evento.type == SDL_QUIT)
+            {
                 ejecutando = false;
             }
             //si se detecta clck y juego no termino
-            else if (evento.type == SDL_MOUSEBUTTONDOWN && !juego->finalizado && juego->tablero != NULL){
+            else if (evento.type == SDL_MOUSEBUTTONDOWN && !juego->finalizado && juego->tablero != NULL)
+            {
+
+                //agarro donde hizo click y me fijo el centro de la ventana, ademas fijo tamanioBoton por alguna razon?
                 int x = evento.button.x;
                 int y = evento.button.y;
-                int centroX = anchoVentana / 2;
-                int centroY = escalado.paddingSuperior / 2;
-                int tamanioBoton = 50;
 
-                //se fija si fue en el centro del hud el click para ver si esta activando el cheat
-                if (x >= centroX - tamanioBoton/2 && x <= centroX + tamanioBoton/2 && y >= centroY - tamanioBoton/2 && y <= centroY + tamanioBoton/2) {
-                    if (juego->minasColocadas && usosRestantesCheat > 0) {
+
+                if (x >= botonCheat.x && x <= botonCheat.x + botonCheat.w &&
+                    y >= botonCheat.y && y <= botonCheat.y + botonCheat.h)
+                {
+
+                    if (juego->minasColocadas && usosRestantesCheat > 0)
+                    {
                         clicksCheat++;
                         if (clicksCheat >= MAX_CLICKS_CHEAT) {
                             cheatEnUso = true;
@@ -349,46 +368,63 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                     }
                     break;
                 }
+
                 //si el click fue en el tablero
-                if (y >= escalado.paddingSuperior) {
+                if (y >= escalado.paddingSuperior)
+                {
                     int fila = (y - escalado.paddingSuperior) / juego->tamCasilla;
                     int col = x / juego->tamCasilla;
-                    if (evento.button.button == SDL_BUTTON_LEFT) { //click izq
-                        if (!juego->minasColocadas) { //si no tiene las minas las coloca
+
+                    if (evento.button.button == SDL_BUTTON_LEFT) //click izq
+                    {
+
+                        if (!juego->minasColocadas)
+                        { //si no tiene las minas las coloca
                             llenar(juego, fila, col);
                             calcularMinasVecinas(juego);
+                            ///////////
                         }
                         Casilla* casilla = &juego->tablero[fila][col];
-                        if (!casilla->revelada && !casilla->marcada) { //si la casilla no esta revelada ni marcada
-                            if (casilla->esMina) { //y es mina, termina el juego 
+
+                        if (!casilla->revelada && !casilla->marcada)
+                        { //si la casilla no esta revelada ni marcada
+                            if (casilla->esMina)
+                            { //y es mina, termina el juego
                                 casilla->revelada = true;
                                 juego->finalizado = true;
                                 juego->tiempoFin = SDL_GetTicks();
                                 juego->minaExplotadaFila = fila;
                                 juego->minaExplotadaCol = col;
                                 //dermarca todas las flags y esferas
-                                for (int i = 0; i < juego->dimension; i++) {
-                                    for (int j = 0; j < juego->dimension; j++) {
+                                for (int i = 0; i < juego->dimension; i++)
+                                {
+                                    for (int j = 0; j < juego->dimension; j++)
+                                    {
                                         Casilla* c = &juego->tablero[i][j];
                                         if (c->marcada) { c->marcada = false; c->esfera = 0; }
                                     }
                                 }
                                 //asign esferas aleatorias a las minas para la animacion de perder
                                 srand(SDL_GetTicks());
-                                for (int i = 0; i < juego->dimension; i++) {
-                                    for (int j = 0; j < juego->dimension; j++) {
+                                for (int i = 0; i < juego->dimension; i++)
+                                {
+                                    for (int j = 0; j < juego->dimension; j++)
+                                    {
                                         Casilla* c = &juego->tablero[i][j];
                                         if (c->esMina) { c->esferaAlPerder = (rand() % 7) + 1; }
                                     }
                                 }
                                 //perdiste
                                 mostrarPantallaFin(renderer, juego, false);
-                            } else if (casilla->minasVecinas == 0) {
+                            } else if (casilla->minasVecinas == 0)
+                            {
                                 //si no tiene minas vecinas revela en cascada
                                 revelarCasillaSinMina(juego, fila, col);
+                                ///////////
                             } else {
                                 //sino, solo la revela
                                 casilla->revelada = true;
+                                ///////////
                             }
                             //si gano la partida despues de este click marca como finalizado y guarda
                             if (ganoLaPartida(juego) && !juego->finalizado) {
@@ -400,25 +436,32 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         chequearError(registrarEvento("CLICK_IZQUIERDO", fila, col, casilla->minasVecinas), ERROR_LOG_ESCRITURA);
                     }
                     //click derecho /marca o desmarca
-                    if (evento.button.button == SDL_BUTTON_RIGHT) {
+                    if (evento.button.button == SDL_BUTTON_RIGHT)
+                    {
                         Casilla* casilla = &juego->tablero[fila][col];
                         if (!casilla->revelada) {
                             if (!casilla->marcada) {
-                                if (juego->minasMarcadas < juego->totalMinas) {  
+                                
+                                if (juego->minasMarcadas < juego->totalMinas)
+                                {
                                     casilla->marcada = true;
                                     casilla->esfera = (rand() % TOTAL_ESFERAS) + 1;
                                     juego->minasMarcadas++;
+                                    ///////////
                                 }
-                            } else {
+                            } else
+                            {
                                 casilla->marcada = false;
                                 casilla->esfera = 0;
                                 juego->minasMarcadas--;
+                                ///////////
                             }
                             //registra el evento en el log
                             chequearError(registrarEvento("CLICK_DERECHO", fila, col, casilla->esfera), ERROR_LOG_ESCRITURA);
 
                             //si gano la partida despues del click termina
-                            if (ganoLaPartida(juego) && !juego->finalizado) {
+                            if (ganoLaPartida(juego) && !juego->finalizado)
+                            {
                                 juego->finalizado = true;
                                 juego->tiempoFin = SDL_GetTicks();
                                 mostrarPantallaFin(renderer, juego, true);
@@ -442,7 +485,8 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     const char* nombresDificultad[] = {"FACIL", "MEDIO", "DIFICIL", "SSJ", "CUSTOM", "VOLVER"};
 
     //si gano, acutaliza estadisticas
-    if (ganoLaPartida(juego)) {
+    if (ganoLaPartida(juego))
+    {
         int tiempoSegundos = (juego->tiempoFin - juego->tiempoInicio) / 1000;
         actualizarEstadisticas(nombresDificultad[dificultad], nombreUsuario, tiempoSegundos);
     }

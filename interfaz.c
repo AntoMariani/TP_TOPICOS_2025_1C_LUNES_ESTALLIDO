@@ -129,8 +129,8 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 
     //////////////////////////////////BOTONES///////////////////////////////////////////////////////
 
-    SDL_Rect botonCheat;
-    obtenerRectBotonesHUD(&botonCheat, juego);
+    SDL_Rect botonCheat, botonFuncionalidadNueva;
+    obtenerRectBotonesHUD(&botonCheat, &botonFuncionalidadNueva, juego);
 
     //////////////////////////////////CONTADOR DE MINAS RESTANTES////////////////////////////////////
 
@@ -198,7 +198,10 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //coloreo y despues dibujo y despues dibujoTexto
+    //coloreo y despues dibujo y escribo el texto
+    SDL_Color colorBotonFuncionalidadNueva = {100,100,100,255};
+    dibujarBotonPlano(renderer,botonFuncionalidadNueva,colorLCD);
+    dibujarTexto(renderer,fuenteHUD,"+",botonFuncionalidadNueva,colorBotonFuncionalidadNueva);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -315,7 +318,7 @@ void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFon
     SDL_RenderDrawRect(renderer, &rect); //dibuna borde
 }
 
-void obtenerRectBotonesHUD(SDL_Rect* cheat, Juego* juego) {
+void obtenerRectBotonesHUD(SDL_Rect* cheat, SDL_Rect* funcionalidadNueva, Juego* juego) {
     int anchoVentana = juego->tamCasilla * juego->dimension;
     int centroX = anchoVentana / 2;
     int centroY = escalado.paddingSuperior / 2;
@@ -323,15 +326,21 @@ void obtenerRectBotonesHUD(SDL_Rect* cheat, Juego* juego) {
     int tamanioBoton = (int)(50 * escalado.escalaGlobal);
     if (tamanioBoton < 35) tamanioBoton = 35;
 
-    //int espacio = (int)(5 * escalado.escalaGlobal);
+    int espacio = (int)(5 * escalado.escalaGlobal);
 
     *cheat = (SDL_Rect){
-        centroX - tamanioBoton / 2, //d cheat->x - tamanioBoton - espacio, rd cheat->x + tamanioBoton - espacio,
-        centroY - tamanioBoton / 2, //al y de ete
+        centroX - tamanioBoton / 2,
+        centroY - tamanioBoton / 2,
         tamanioBoton,
         tamanioBoton
     };
 
+    *funcionalidadNueva = (SDL_Rect){
+        cheat->x + tamanioBoton + espacio,
+        cheat->y,
+        tamanioBoton,
+        tamanioBoton
+    };
 }
 
 

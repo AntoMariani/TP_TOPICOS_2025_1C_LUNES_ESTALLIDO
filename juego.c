@@ -87,7 +87,6 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
             juego->tablero[i][j] = (Casilla){ false, false, false, 0, 0 };
         }
     }
-
 }
 
 
@@ -331,10 +330,11 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     SDL_Event evento;
 
     //obtener boton
-    SDL_Rect botonCheat;
-    obtenerRectBotonesHUD(&botonCheat, juego);
+    SDL_Rect botonCheat, botonFuncionalidadNueva;
+    obtenerRectBotonesHUD(&botonCheat,&botonFuncionalidadNueva, juego);
 
     bool ejecutando = true;
+    bool hizoClick = false;
     while (ejecutando)
     {
         while (SDL_PollEvent(&evento))
@@ -367,6 +367,64 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         }
                     }
                     break;
+                }
+
+                if (x >= botonFuncionalidadNueva.x && x <= botonFuncionalidadNueva.x + botonFuncionalidadNueva.w &&
+                    y >= botonFuncionalidadNueva.y && y <= botonFuncionalidadNueva.y + botonFuncionalidadNueva.h && !hizoClick)
+                {
+
+                    puts("LONG LIVE DEBUGUEAR POR CONSOLA");
+                    if(juego->dimension<30)
+                    {
+                        juego->dimension = juego->dimension+2;
+
+                        juego->tamCasilla = calcularTamCasilla(juego->dimension);
+
+                        //tam ventana segun tablero
+                        anchoVentana = juego->tamCasilla * juego->dimension;
+                        altoVentana  = escalado.paddingSuperior + juego->tamCasilla * juego->dimension;
+                        SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
+                        calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+
+                        //una vez que reescale la ventana, ahora tengo que generar el nuevo tablero y asignarle memoria
+
+                        Casilla ** nuevoTablero;
+
+                        nuevoTablero = malloc(juego->dimension * sizeof(Casilla*));
+                        for (int i = 0; i < juego->dimension; i++) {
+                            nuevoTablero[i] = malloc(juego->dimension * sizeof(Casilla));
+                            for (int j = 0; j < juego->dimension; j++) {
+                                if (i<juego->dimension-2 && j<juego->dimension-2)
+                                    nuevoTablero[i][j] = (Casilla){ juego->tablero[i][j].esMina, juego->tablero[i][j].revelada, juego->tablero[i][j].marcada, juego->tablero[i][j].minasVecinas, juego->tablero[i][j].esfera, juego->tablero[i][j].esferaAlPerder };
+                                else
+                                    nuevoTablero[i][j] = (Casilla){ false, false, false, 0, 0, 0 };
+                            }
+                        }
+
+                        //calculo de nuevo la cantidad de minas a poner porque no era una func
+                        float porcentajeMinas = 0.0;
+                        if (dificultad == DIFICULTAD_FACIL) {  porcentajeMinas = 0.12f; }
+                        if (dificultad == DIFICULTAD_MEDIO) {  porcentajeMinas = 0.15f; }
+                        if (dificultad == DIFICULTAD_DIFICIL) {  porcentajeMinas = 0.18f; }
+                        if (dificultad == DIFICULTAD_SSJ) {  porcentajeMinas = 0.22f; }
+
+                        printf("TOTAL MINAS JUEGO %d\n",juego->totalMinas);
+                        int totalMinasNuevo = (int)(juego->dimension * juego->dimension * porcentajeMinas);
+                        printf("TOTAL MINAS NUEVO %d\n",totalMinasNuevo);
+                        int totalMinasALlenar = totalMinasNuevo - juego->totalMinas;
+                        printf("TOTAL MINAS a llenar %d\n",totalMinasALlenar);
+                        juego->totalMinas = totalMinasNuevo;
+
+                        juego->tablero = nuevoTablero;
+
+                        llenarElRestoDeMinas(totalMinasALlenar,juego->dimension, juego);
+
+                        obtenerRectBotonesHUD(&botonCheat,&botonFuncionalidadNueva, juego);
+
+
+                    }
+                    break;
+                    hizoClick = true;
                 }
 
                 //si el click fue en el tablero
@@ -441,7 +499,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         Casilla* casilla = &juego->tablero[fila][col];
                         if (!casilla->revelada) {
                             if (!casilla->marcada) {
-                                
+
                                 if (juego->minasMarcadas < juego->totalMinas)
                                 {
                                     casilla->marcada = true;
@@ -490,4 +548,51 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
         int tiempoSegundos = (juego->tiempoFin - juego->tiempoInicio) / 1000;
         actualizarEstadisticas(nombresDificultad[dificultad], nombreUsuario, tiempoSegundos);
     }
+}
+
+
+//void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego){
+//
+//    srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
+//    int intentos = 0;
+//
+//    int minas = 0;
+//
+//    while (minas < totalMinasALlenar) {
+//        int fila = rand() % dimension;
+//        int col = rand() % dimension;
+//
+//        if(juego->tablero[fila][col].esMina)
+//                continue;
+//
+//        juego->tablero[fila][col].esMina = true;
+//        minas++;
+//    }
+//
+//        calcularMinasVecinas(juego);
+//        intentos++;
+//        printf("Intento %d: minas colocadas\n", intentos);
+//}
+
+void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego){
+    srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
+
+    int intentos = 0; // para que no genere una mina en esa casilla inciial
+    //coloca minas aleatorais
+    int minas = 0;
+    while (minas < totalMinasALlenar) {
+        int fila = rand() % juego->dimension;
+        int col = rand() % juego->dimension;
+
+        if ((fila < dimension-2 && col < dimension-2) || juego->tablero[fila][col].esMina || juego->tablero[fila][col].revelada || juego->tablero[fila][col].marcada) //si es la casilla inicial o ya hay mina ahi, la salta, sino coloca mina y suma
+            continue;
+
+        juego->tablero[fila][col].esMina = true;
+        minas++;
+    }
+
+    calcularMinasVecinas(juego); //calcula las minas vecinas de cada casilla
+    intentos++;
+    printf("Intento %d: minas colocadas\n", intentos);
+
 }

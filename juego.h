@@ -23,5 +23,6 @@ bool ganoLaPartida(Juego* juego);
 void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDificultad dificultad, const char* nombreUsuario);
 void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario);
 
+void llenarElRestoDeMinas(int totalMinasALlenar,int dimension, Juego * juego);
 
 #endif // JUEGO_H_INCLUDED

@@ -9,18 +9,7 @@ SDL_Texture* mina_explotada_texturas[FRAMES_MINA_EXPLOTADA] = {NULL};
 SDL_Texture* rastreador_cheat_texturas[FRAMES_RASTREADOR] = {NULL};
 TTF_Font* fuenteTexto = NULL;
 TTF_Font* fuenteHUD = NULL;
-
-SDL_Color colores[] =
-{
-    {0, 0, 0, 255},             // N[0] - Negro
-    {255, 255, 0, 255},         // Y[1] - Amarillo
-    {255, 255, 255, 255},       // B[2] - Blanco
-    {0, 150, 60, 255},          // V[3] - Verde
-    {255, 0, 0, 255},           // R[4] - Rojo
-    {0, 0, 255, 255},           // R[5] - Azul
-    {255, 105, 180, 255},       // R[6] - Rosa
-    {254, 195, 29, 255}         // N[7] - Naranja HUD
-};
+TTF_Font* fuenteBotones = NULL;
 
 int cargarAnimaciones(SDL_Renderer* renderer, SDL_Texture* texturas[][FRAMES_NUMEROS], int totalNumeros, int totalFrames, const char* formatoPath)
 {
@@ -119,6 +108,13 @@ void cargarFuentes()
         printf("Error al cargar fuenteHUD: %s\n", TTF_GetError());
         chequearError(ERROR_SDL_TTF, ERROR_SDL_TTF);
     }
+
+    fuenteBotones = TTF_OpenFont("fnt/Silkscreen-Regular.ttf", escalado.tamanioFuenteHUDEXTRA);
+    if (!fuenteBotones)
+    {
+        printf("Error al cargar fuenteBotones: %s\n", TTF_GetError());
+        chequearError(ERROR_SDL_TTF, ERROR_SDL_TTF);
+    }
 }
 
 
@@ -131,5 +127,9 @@ void liberarFuentes()
     if (fuenteHUD != NULL) {
         TTF_CloseFont(fuenteHUD);
         fuenteHUD = NULL;
+    }
+    if (fuenteBotones != NULL) {
+        TTF_CloseFont(fuenteBotones);
+        fuenteBotones = NULL;
     }
 }

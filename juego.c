@@ -58,6 +58,9 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
     fclose(archivo); //cierra
 
     printf("dimensiones=%d totalMinas=%d\n", juego->dimension, juego->totalMinas);
+    juego->dimensionInicial = juego->dimension;
+    printf("dimension inicial %d\n", juego->dimensionInicial);
+    juego->totalMinasInicial = juego->totalMinas;
 
     juego->minasMarcadas = 0; //ninguna marcada al inicio
     juego->finalizado = false; //no finalizado al inicio
@@ -87,6 +90,7 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
             juego->tablero[i][j] = (Casilla){ false, false, false, 0, 0 };
         }
     }
+
 }
 
 
@@ -144,6 +148,29 @@ void llenar(Juego* juego, int filaInicial, int colInicial)
     } while (juego->tablero[filaInicial][colInicial].minasVecinas != 0); //si la casilla inical tiene minas, repite proceso
 
     juego->minasColocadas = true;
+}
+
+void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego){
+    srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
+
+    int intentos = 0; // para que no genere una mina en esa casilla inciial
+    //coloca minas aleatorais
+    int minas = 0;
+    while (minas < totalMinasALlenar) {
+        int fila = rand() % juego->dimension;
+        int col = rand() % juego->dimension;
+
+        if ((fila < dimension-2 && col < dimension-2) || juego->tablero[fila][col].esMina || juego->tablero[fila][col].revelada || juego->tablero[fila][col].marcada) //si es la casilla inicial o ya hay mina ahi, la salta, sino coloca mina y suma
+            continue;
+
+        juego->tablero[fila][col].esMina = true;
+        minas++;
+    }
+
+    calcularMinasVecinas(juego); //calcula las minas vecinas de cada casilla
+    intentos++;
+    printf("Intento %d: minas colocadas\n", intentos);
+
 }
 
 
@@ -245,6 +272,7 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
 
     int dimension = 0;
     int totalMinas = 0;
+
     if (dificultad == DIFICULTAD_CUSTOM)
     {
         inicializarJuego(&juego, "buscaminas.conf");
@@ -261,8 +289,11 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
         totalMinas = (int)(dimension * dimension * porcentajeMinas);
         juego.dimension = dimension;
         juego.totalMinas = totalMinas;
+        juego.dimensionInicial = dimension;
+        juego.totalMinasInicial = totalMinas;
     }
 
+    
     juego.tamCasilla = calcularTamCasilla(dimension);
     //juego.tamPixel = juego.tamCasilla / 8;
     juego.minasMarcadas = 0;
@@ -279,14 +310,14 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
         }
     }
 
-    //INICIAR
+    inicializarHistorialFotosTablero(&juego.historial);
 
     ejecutarLoopDeJuego(renderer, ventana, &juego, dificultad, nombreUsuario);
 
     SDL_PumpEvents();
     SDL_FlushEvent(SDL_MOUSEBUTTONDOWN);
 
-    //LIBERAR
+    liberarHistorialFotosTablero(&juego.historial, juego.dimension);
 
     liberarJuego(&juego);
 
@@ -316,25 +347,27 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
 
     //cheat
     int clicksCheat = 0;
-    int usosRestantesCheat = obtenerMaximoUsosCheat(dificultad);
+    juego->cheatUsosRestantes = obtenerMaximoUsosCheat(dificultad);
     bool cheatEnUso = false;
     Uint32 cheatActivadoTiempo = 0;
 
     //tam ventana segun tablero
     int anchoVentana = juego->tamCasilla * juego->dimension;
-    int altoVentana  = escalado.paddingSuperior + juego->tamCasilla * juego->dimension;
+    int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
     SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
     calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
 
 
     SDL_Event evento;
 
-    //obtener boton
-    SDL_Rect botonCheat, botonFuncionalidadNueva;
-    obtenerRectBotonesHUD(&botonCheat,&botonFuncionalidadNueva, juego);
+    //obtener botones
+    SDL_Rect botonDeshacer, botonCheat, botonRehacer;
+    SDL_Rect botonReset, botonAgrandar, botonSalir;
+    obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
+                      &botonReset, &botonAgrandar, &botonSalir, juego);
 
     bool ejecutando = true;
-    bool hizoClick = false;
+    bool hizoClickAgrandar = false;
     while (ejecutando)
     {
         while (SDL_PollEvent(&evento))
@@ -351,29 +384,55 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                 int x = evento.button.x;
                 int y = evento.button.y;
 
+                if (x >= botonDeshacer.x && x <= botonDeshacer.x + botonDeshacer.w &&
+                    y >= botonDeshacer.y && y <= botonDeshacer.y + botonDeshacer.h)
+                {
+                        if (!deshacerFotoTablero(&juego->historial, juego))
+                        {
+                            printf("No se puede deshacer: ya estás en el estado inicial.\n");
+                        }
+                                break;
+                }
 
                 if (x >= botonCheat.x && x <= botonCheat.x + botonCheat.w &&
                     y >= botonCheat.y && y <= botonCheat.y + botonCheat.h)
                 {
 
-                    if (juego->minasColocadas && usosRestantesCheat > 0)
+                    if (juego->minasColocadas && juego->cheatUsosRestantes > 0)
                     {
                         clicksCheat++;
                         if (clicksCheat >= MAX_CLICKS_CHEAT) {
                             cheatEnUso = true;
                             cheatActivadoTiempo = SDL_GetTicks();
-                            usosRestantesCheat--;
+                            juego->cheatUsosRestantes--;
                             clicksCheat = 0;
                         }
                     }
                     break;
                 }
 
-                if (x >= botonFuncionalidadNueva.x && x <= botonFuncionalidadNueva.x + botonFuncionalidadNueva.w &&
-                    y >= botonFuncionalidadNueva.y && y <= botonFuncionalidadNueva.y + botonFuncionalidadNueva.h && !hizoClick)
+                if (x >= botonRehacer.x && x <= botonRehacer.x + botonRehacer.w &&
+                    y >= botonRehacer.y && y <= botonRehacer.y + botonRehacer.h)
+                {
+                    if (!rehacerFotoTablero(&juego->historial, juego)){
+                        printf("No hay nada para rehacer\n");
+                    }
+                    break;
+                }
+
+                if (x >= botonReset.x && x <= botonReset.x + botonReset.w &&
+                    y >= botonReset.y && y <= botonReset.y + botonReset.h)
+                {
+                    printf("CLICK: RESET\n");
+                    reiniciarPartida(juego, dificultad, ventana);
+                    obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
+                      &botonReset, &botonAgrandar, &botonSalir, juego);
+
+                }
+                else if (x >= botonAgrandar.x && x <= botonAgrandar.x + botonAgrandar.w &&
+                         y >= botonAgrandar.y && y <= botonAgrandar.y + botonAgrandar.h && !hizoClickAgrandar)
                 {
 
-                    puts("LONG LIVE DEBUGUEAR POR CONSOLA");
                     if(juego->dimension<30)
                     {
                         juego->dimension = juego->dimension+2;
@@ -382,7 +441,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
 
                         //tam ventana segun tablero
                         anchoVentana = juego->tamCasilla * juego->dimension;
-                        altoVentana  = escalado.paddingSuperior + juego->tamCasilla * juego->dimension;
+                        altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
                         SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
                         calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
 
@@ -419,18 +478,23 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
 
                         llenarElRestoDeMinas(totalMinasALlenar,juego->dimension, juego);
 
-                        obtenerRectBotonesHUD(&botonCheat,&botonFuncionalidadNueva, juego);
-
-
+                        obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
+                      &botonReset, &botonAgrandar, &botonSalir, juego);
                     }
                     break;
-                    hizoClick = true;
+                    hizoClickAgrandar = true;
+                }
+                else if (x >= botonSalir.x && x <= botonSalir.x + botonSalir.w &&
+                         y >= botonSalir.y && y <= botonSalir.y + botonSalir.h)
+                {
+                    printf("CLICK: SALIR\n");
+                    ejecutando = false; // o exit(0), según tu lógica
                 }
 
                 //si el click fue en el tablero
-                if (y >= escalado.paddingSuperior)
+                if (y >= (escalado.tamanioHUD + escalado.tamanioHUDextra))
                 {
-                    int fila = (y - escalado.paddingSuperior) / juego->tamCasilla;
+                    int fila = (y - escalado.tamanioHUD - escalado.tamanioHUDextra) / juego->tamCasilla;
                     int col = x / juego->tamCasilla;
 
                     if (evento.button.button == SDL_BUTTON_LEFT) //click izq
@@ -440,7 +504,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         { //si no tiene las minas las coloca
                             llenar(juego, fila, col);
                             calcularMinasVecinas(juego);
-                            ///////////
+                            guardarFotoTablero(&juego->historial,juego);
                         }
                         Casilla* casilla = &juego->tablero[fila][col];
 
@@ -478,11 +542,11 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                             {
                                 //si no tiene minas vecinas revela en cascada
                                 revelarCasillaSinMina(juego, fila, col);
-                                ///////////
+                                guardarFotoTablero(&juego->historial, juego);
                             } else {
                                 //sino, solo la revela
                                 casilla->revelada = true;
-                                ///////////
+                                guardarFotoTablero(&juego->historial, juego);
                             }
                             //si gano la partida despues de este click marca como finalizado y guarda
                             if (ganoLaPartida(juego) && !juego->finalizado) {
@@ -505,14 +569,14 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                                     casilla->marcada = true;
                                     casilla->esfera = (rand() % TOTAL_ESFERAS) + 1;
                                     juego->minasMarcadas++;
-                                    ///////////
+                                    guardarFotoTablero(&juego->historial,juego);
                                 }
                             } else
                             {
                                 casilla->marcada = false;
                                 casilla->esfera = 0;
                                 juego->minasMarcadas--;
-                                ///////////
+                                guardarFotoTablero(&juego->historial,juego);
                             }
                             //registra el evento en el log
                             chequearError(registrarEvento("CLICK_DERECHO", fila, col, casilla->esfera), ERROR_LOG_ESCRITURA);
@@ -533,7 +597,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
         bool cheatEnPeriodoActivo = (cheatEnUso && (SDL_GetTicks() - cheatActivadoTiempo) <= DURACION_CHEAT_MS);
 
         //dibuja tablero e interfaz
-        dibujarTablero(renderer, juego, fuenteTexto, fuenteHUD, clicksCheat, cheatEnPeriodoActivo, cheatActivadoTiempo);
+        dibujarTablero(renderer, juego, fuenteTexto, fuenteHUD, fuenteBotones, clicksCheat, cheatEnPeriodoActivo, cheatActivadoTiempo);
 
         //si termino el periodo del cheat lo desactiva
         if (!cheatEnPeriodoActivo) { cheatEnUso = false; }
@@ -550,49 +614,50 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     }
 }
 
+void reiniciarPartida(Juego* juego, opcionesMenuDificultad dificultad, SDL_Window * ventana) {
 
-//void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego){
-//
-//    srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
-//    int intentos = 0;
-//
-//    int minas = 0;
-//
-//    while (minas < totalMinasALlenar) {
-//        int fila = rand() % dimension;
-//        int col = rand() % dimension;
-//
-//        if(juego->tablero[fila][col].esMina)
-//                continue;
-//
-//        juego->tablero[fila][col].esMina = true;
-//        minas++;
-//    }
-//
-//        calcularMinasVecinas(juego);
-//        intentos++;
-//        printf("Intento %d: minas colocadas\n", intentos);
-//}
+    juego->dimension = juego->dimensionInicial;
+    juego->totalMinas = juego->totalMinasInicial;
 
-void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego){
-    srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
+    liberarHistorialFotosTablero(&juego->historial, juego->dimension);
+    liberarTablero(juego->tablero, juego->dimension);
 
-    int intentos = 0; // para que no genere una mina en esa casilla inciial
-    //coloca minas aleatorais
-    int minas = 0;
-    while (minas < totalMinasALlenar) {
-        int fila = rand() % juego->dimension;
-        int col = rand() % juego->dimension;
+    //tam ventana segun tablero
+    int anchoVentana = juego->tamCasilla * juego->dimension;
+    int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
+    SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
+    calcularEscaladoUI(&escalado, anchoVentana, altoVentana);
 
-        if ((fila < dimension-2 && col < dimension-2) || juego->tablero[fila][col].esMina || juego->tablero[fila][col].revelada || juego->tablero[fila][col].marcada) //si es la casilla inicial o ya hay mina ahi, la salta, sino coloca mina y suma
-            continue;
+    juego->tablero = malloc(juego->dimension * sizeof(Casilla*));
+    for (int i = 0; i < juego->dimension; i++)
+        juego->tablero[i] = malloc(juego->dimension * sizeof(Casilla));
 
-        juego->tablero[fila][col].esMina = true;
-        minas++;
+    juego->minasMarcadas = 0;
+    juego->minaExplotadaFila = -1;
+    juego->minaExplotadaCol = -1;
+    juego->minasColocadas = false;
+    juego->finalizado = false;
+    juego->tiempoInicio = SDL_GetTicks();
+    juego->tiempoFin = 0;
+
+    for (int fila = 0; fila < juego->dimension; fila++) {
+        for (int col = 0; col < juego->dimension; col++) {
+            juego->tablero[fila][col].esMina = false;
+            juego->tablero[fila][col].revelada = false;
+            juego->tablero[fila][col].marcada = false;
+            juego->tablero[fila][col].minasVecinas = 0;
+            juego->tablero[fila][col].esfera = rand() % 7 + 1;
+            juego->tablero[fila][col].esferaAlPerder = rand() % 7 + 1;
+        }
     }
 
-    calcularMinasVecinas(juego); //calcula las minas vecinas de cada casilla
-    intentos++;
-    printf("Intento %d: minas colocadas\n", intentos);
+    juego->cheatActivo = false;
+    juego->cheatUsosRestantes = obtenerMaximoUsosCheat(dificultad);
+    juego->cheatTiempoInicio = 0;
 
+    inicializarHistorialFotosTablero(&juego->historial);
+    guardarFotoTablero(&juego->historial, juego);  // Guarda snapshot inicial (sin minas todavía)
+
+    printf("Partida reiniciada completamente.\n");
 }
+

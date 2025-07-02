@@ -39,6 +39,14 @@
 #define CX 5 // Azul
 #define CY 6 // Rosa
 #define CNH 7 //naranja hud
+#define VERDE_ESFERAS    8
+#define NARANJA_GOKU     9
+#define CIAN_RADAR      10
+#define ROJO_ALERTA     11
+#define CASILLA_OCULTA  12
+#define CASILLA_REVELADA 13
+
+
 
 //estructura juego normal
 typedef struct {
@@ -50,10 +58,26 @@ typedef struct {
     int esferaAlPerder;
 } Casilla;
 
+//historial
+typedef struct {
+    Casilla** tablero;
+    int minasMarcadas; //cuantas minas estaban marcadas
+    int dimension;
+} FotoTablero;
+
+//historial
+typedef struct {
+    FotoTablero* lista;
+    int cantidad;
+    int posActual;
+} HistorialFotosTablero;
+
 //estructura juego normal
 typedef struct {
     int dimension;
+    int dimensionInicial;
     int totalMinas;
+    int totalMinasInicial;
     int minasMarcadas;
     int minaExplotadaFila;
     int minaExplotadaCol;
@@ -64,10 +88,10 @@ typedef struct {
     Casilla** tablero;
     int tamCasilla;
     int tamPixel;
-    int cheatNivelActual;
-    int cheatUsosRestantes;
     bool cheatActivo;
+    int cheatUsosRestantes;
     Uint32 cheatTiempoInicio;
+    HistorialFotosTablero historial;
 } Juego;
 
 

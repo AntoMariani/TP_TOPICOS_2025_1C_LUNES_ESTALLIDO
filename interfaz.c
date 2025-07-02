@@ -93,7 +93,7 @@ void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer)
 }
 
 
-void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD, int clicksCheat, bool cheatEnPeriodoActivo, Uint32 cheatActivadoTiempo)
+void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD, TTF_Font * fuenteBotones, int clicksCheat, bool cheatEnPeriodoActivo, Uint32 cheatActivadoTiempo)
 {
     //verificacion de punteros validos
     if (!renderer || !juego || !fuente || !fuenteHUD) {
@@ -102,7 +102,13 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     }
 
     //limpia la pantalla con un color de fondo
-    SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+    //SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+    SDL_SetRenderDrawColor(renderer,
+    colores[CASILLA_REVELADA].r,
+    colores[CASILLA_REVELADA].g,
+    colores[CASILLA_REVELADA].b,
+    colores[CASILLA_REVELADA].a);
+
     SDL_RenderClear(renderer);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,13 +120,18 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
+    SDL_Rect hudextra = { 0, 0, juego->tamCasilla * juego->dimension, escalado.tamanioHUDextra };
+    SDL_SetRenderDrawColor(renderer, 60, 60, 60, 255);  // gris más oscuro
+    SDL_RenderFillRect(renderer, &hudextra);
+
     //dibuja el HUD en la barra superior
-    SDL_Rect hud = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior };
+    SDL_Rect hud = { 0, hudextra.h, juego->tamCasilla * juego->dimension, escalado.tamanioHUD };
     //typedef struct SDL_Rect {int x, y; int w, h;} SDL_Rect;
     //x posicion horizontal izquierda, y posicion vertical superior, w ancho, h alto.
     //x = 0 el rectangulo empieza en el borde izquierdo de la ventana, y = 0 el rectangulo empieza en el borde superior de la ventana
     //w = juego->tamCasilla (tamaño en pixeles de cada casilla) * juego->dimension (cantidad de casillas en una fila o columna)
-    //h = escalado.paddingSuperior el alto del rectangulo es el padding superior
+    //h = escalado.tamanioHUD el alto del rectangulo es el padding superior
 
     //confugura el color de fondo del HUD y lo dibuja
     SDL_SetRenderDrawColor(renderer, 80, 80, 80, 255);
@@ -129,9 +140,10 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 
     //////////////////////////////////BOTONES///////////////////////////////////////////////////////
 
-    SDL_Rect botonCheat, botonFuncionalidadNueva;
-    obtenerRectBotonesHUD(&botonCheat, &botonFuncionalidadNueva, juego);
-
+    SDL_Rect botonDeshacer, botonCheat, botonRehacer;
+    SDL_Rect botonReset, botonAgrandar, botonSalir;
+    obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
+                      &botonReset, &botonAgrandar, &botonSalir, juego);
     //////////////////////////////////CONTADOR DE MINAS RESTANTES////////////////////////////////////
 
     //variables para dibujar el contador de minas y para dibujar el timer
@@ -139,7 +151,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     int margen = (int)(20 * escalado.escalaGlobal); //margen de 20px desde el borde derecho, se escala segun la resolucion
     int derecha = juego->tamCasilla * juego->dimension - margen;
     int izquierda = margen;
-    int paddingSuperior = 10 * escalado.escalaGlobal;
+    int paddingSuperior =  escalado.tamanioHUDextra + 10 * escalado.escalaGlobal;
 
     char minasTexto[4]; //para mostrar las minas restantes
     sprintf(minasTexto, "%03d", juego->totalMinas - juego->minasMarcadas); //formatea el texto con las minas restantes, mestra un numero de 3 digitos, rellenando con ceros a la izq
@@ -198,10 +210,21 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //coloreo y despues dibujo y escribo el texto
-    SDL_Color colorBotonFuncionalidadNueva = {100,100,100,255};
-    dibujarBotonPlano(renderer,botonFuncionalidadNueva,colorLCD);
-    dibujarTexto(renderer,fuenteHUD,"+",botonFuncionalidadNueva,colorBotonFuncionalidadNueva);
+    SDL_Color colorBotonRehacerDeshacer = {100,100,100,255}; //color gris claro para los botones de deshacer y rehacer
+
+    dibujarBotonPlano(renderer, botonDeshacer, colorBotonRehacerDeshacer);
+    dibujarBotonPlano(renderer, botonRehacer, colorBotonRehacerDeshacer);
+    dibujarTexto(renderer, fuenteHUD, "<", botonDeshacer, colorLCD);
+    dibujarTexto(renderer, fuenteHUD, ">", botonRehacer, colorLCD);
+
+    dibujarBotonPlano(renderer, botonReset, colores[CNH]);
+    dibujarBotonPlano(renderer, botonAgrandar, colores[CNH]);
+    dibujarBotonPlano(renderer, botonSalir, colores[ROJO_ALERTA]);
+
+    SDL_Color colorTexto = {255, 255, 255, 255};    // blanco
+    dibujarTexto(renderer, fuenteBotones, "RESET", botonReset, colorTexto);
+    dibujarTexto(renderer, fuenteBotones, "EXPAND", botonAgrandar, colorTexto);
+    dibujarTexto(renderer, fuenteBotones, "EXIT", botonSalir, colorTexto);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -216,7 +239,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     for (int fila = 0; fila < juego->dimension; fila++) { //estos dos for recorren el tablero calculando la posicion de cada celda en pantalla
         for (int col = 0; col < juego->dimension; col++) {
             celda.x = col * juego->tamCasilla;
-            celda.y = escalado.paddingSuperior + fila * juego->tamCasilla;
+            celda.y = escalado.tamanioHUDextra + escalado.tamanioHUD  + fila * juego->tamCasilla;
             Casilla* casilla = &juego->tablero[fila][col]; //, obteniendo un puntero a la casilla actual
 
             if (juego->finalizado && casilla->esMina) { //si el juego finalizó y la casilla es una mina pone una mina explotada en esa celda, sino muestra una esfera random
@@ -276,7 +299,7 @@ void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego)
             if (casilla->esMina && !casilla->marcada) { //si es mina y no esta marcada, dibuja un rectangulo semi-transparente
                 SDL_Rect destino = {
                     col * juego->tamCasilla, //x
-                    escalado.paddingSuperior + fila * juego->tamCasilla, //y teniendo en cuenta padding de hud
+                    escalado.tamanioHUD + escalado.tamanioHUDextra +  fila * juego->tamCasilla, //y teniendo en cuenta padding de hud
                     juego->tamCasilla, //w
                     juego->tamCasilla //h
                 };
@@ -297,7 +320,7 @@ void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego)
 //    pixel.h = tamPixel;
 //
 //    int offsetX = col * tamPixel * 8;
-//    int offsetY = escalado.paddingSuperior + fila * tamPixel * 8;
+//    int offsetY = escalado.tamanioHUD + fila * tamPixel * 8;
 //
 //    for (int i = 0; i < 8; i++) {
 //        for (int j = 0; j < 8; j++) {
@@ -318,10 +341,12 @@ void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFon
     SDL_RenderDrawRect(renderer, &rect); //dibuna borde
 }
 
-void obtenerRectBotonesHUD(SDL_Rect* cheat, SDL_Rect* funcionalidadNueva, Juego* juego) {
+void obtenerRectBotonesHUD(SDL_Rect* deshacer, SDL_Rect* cheat, SDL_Rect* rehacer,
+                           SDL_Rect* reset, SDL_Rect* agrandar, SDL_Rect* salir,
+                           Juego* juego) {
     int anchoVentana = juego->tamCasilla * juego->dimension;
     int centroX = anchoVentana / 2;
-    int centroY = escalado.paddingSuperior / 2;
+    int centroY = escalado.tamanioHUDextra + escalado.tamanioHUD / 2;
 
     int tamanioBoton = (int)(50 * escalado.escalaGlobal);
     if (tamanioBoton < 35) tamanioBoton = 35;
@@ -335,11 +360,48 @@ void obtenerRectBotonesHUD(SDL_Rect* cheat, SDL_Rect* funcionalidadNueva, Juego*
         tamanioBoton
     };
 
-    *funcionalidadNueva = (SDL_Rect){
+    *deshacer = (SDL_Rect){
+        cheat->x - tamanioBoton - espacio,
+        cheat->y,
+        tamanioBoton,
+        tamanioBoton
+    };
+
+    *rehacer = (SDL_Rect){
         cheat->x + tamanioBoton + espacio,
         cheat->y,
         tamanioBoton,
         tamanioBoton
+    };
+
+    int margenLateral = 10;       // margen izquierda/derecha
+    int espacioEntre = 10;        // padding entre botones
+    int altoBoton = 30;           // alto de todos los botones
+
+    int anchoDisponible = anchoVentana - 2 * margenLateral - 2 * espacioEntre;
+    int anchoBoton = anchoDisponible / 3;
+
+    int y = (escalado.tamanioHUDextra - altoBoton) / 2;
+
+    *reset = (SDL_Rect){
+        margenLateral,
+        y,
+        anchoBoton,
+        altoBoton
+    };
+
+    *agrandar = (SDL_Rect){
+        reset->x + reset->w + espacioEntre,
+        y,
+        anchoBoton,
+        altoBoton
+    };
+
+    *salir = (SDL_Rect){
+        agrandar->x + agrandar->w + espacioEntre,
+        y,
+        anchoBoton,
+        altoBoton
     };
 }
 
@@ -851,7 +913,7 @@ void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
         //crea un rectangulo overlay que cubre toda la pantalla y hud, empieza borde izquierdo y borde superior y toma todo el ancho del tablero, luego toma el padding superior mas dimensiones y toma todo el alto
-        SDL_Rect overlay = { 0, 0, juego->tamCasilla * juego->dimension, escalado.paddingSuperior + juego->tamCasilla * juego->dimension };
+        SDL_Rect overlay = { 0, 0, juego->tamCasilla * juego->dimension, escalado.tamanioHUD +escalado.tamanioHUDextra+ juego->tamCasilla * juego->dimension };
         SDL_RenderFillRect(renderer, &overlay);
 
         //texto superpuesto

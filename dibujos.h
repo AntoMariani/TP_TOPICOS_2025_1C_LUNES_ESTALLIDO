@@ -14,6 +14,7 @@ extern SDL_Texture* mina_explotada_texturas[FRAMES_MINA_EXPLOTADA];
 extern SDL_Texture* rastreador_cheat_texturas[FRAMES_RASTREADOR];
 extern TTF_Font* fuenteTexto;
 extern TTF_Font* fuenteHUD;
+extern TTF_Font* fuenteBotones;
 
 extern SDL_Color colores[];
 

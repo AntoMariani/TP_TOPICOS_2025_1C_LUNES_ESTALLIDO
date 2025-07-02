@@ -2,7 +2,8 @@
 #define ESCALADO_H_INCLUDED
 
 #define ALTURA_VENTANA_BASE 800
-#define PADDING_SUPERIOR_BASE 60
+#define TAMANIO_HUD_BASE 60
+#define TAMANIO_HUD_EXTRA_BASE 60
 
 //la estructura EscaladoUI tiene todos los datos necesarios para el escalado de la UI
 typedef struct {
@@ -16,9 +17,11 @@ typedef struct {
     int botonAlto; //alto de los botones, se calcula en base al factor de escalado
     int espaciadoVertical; //espaciado vertical entre los botones, se calcula en base al factor de escalado
     int margenInicialY; //margen inicial Y para los botones, se calcula en base a la posicion del logo y el factor de escalado
-    int tamanioFuenteTexto; 
+    int tamanioFuenteTexto;
     int tamanioFuenteHUD;
-    int paddingSuperior; // //padding superior para que la interfaz no quede pegada al borde superior
+    int tamanioFuenteHUDEXTRA;
+    int tamanioHUD; //parte del cheat
+    int tamanioHUDextra; // parte de los botones de arriba de todo 
 } EscaladoUI;
 
 //la hacemos extern para que sea accesible desde otros archivos

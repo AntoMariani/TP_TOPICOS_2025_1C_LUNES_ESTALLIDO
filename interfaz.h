@@ -19,13 +19,15 @@ int crearVentana(SDL_Window** ventana, int width,  int height);
 int crearRenderer(SDL_Renderer** renderer,SDL_Window** ventana);
 void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer);
 
-void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD,int clicksCheat, bool cheatEnUso,Uint32 cheatActivadoTiempo);
+void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD,TTF_Font * fuenteBotones, int clicksCheat, bool cheatEnUso,Uint32 cheatActivadoTiempo);
 
 void dibujarLogo(SDL_Renderer* renderer, SDL_Window* ventana, int frameLogo);
 void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, SDL_Rect rect, SDL_Color colorTexto);
 void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego);
 void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFondo);
-void obtenerRectBotonesHUD(SDL_Rect* cheat, SDL_Rect* funcionalidadNueva, Juego* juego);
+void obtenerRectBotonesHUD(SDL_Rect* deshacer, SDL_Rect* cheat, SDL_Rect* rehacer,
+                           SDL_Rect* reset, SDL_Rect* agrandar, SDL_Rect* salir,
+                           Juego* juego);
 
 opcionesMenuPrincipal mostrarMenuPrincipal(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);
 opcionesMenuTipoPartida mostrarMenuTipoPartida(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);

@@ -18,7 +18,7 @@ void calcularEscaladoUI(EscaladoUI* escalado, int anchoPantalla, int altoPantall
     //y de paso limitamos que no pueda quedar todo muy chiquito en pantallas chicas
     float escalaCalculada = (float)escalado->altoVentanaMenu / ALTURA_VENTANA_BASE;
     if (escalaCalculada < 0.75f)
-        escalaCalculada = 0.75f; 
+        escalaCalculada = 0.75f;
 
     //esto lo usamos para calcular los botones y demases
     escalado->escalaGlobal = escalaCalculada;
@@ -32,7 +32,7 @@ void calcularEscaladoUI(EscaladoUI* escalado, int anchoPantalla, int altoPantall
         escalado->logoAncho = 200;
     if (escalado->logoAlto  < 100)
         escalado->logoAlto  = 100;
-    
+
     escalado->logoPosY  = (int)(40  * escalado->escalaGlobal); //posicionamos el logo en la parte superior de la ventana, con un margen de 40px desde arriba
     escalado->botonAncho = (int)(300 * escalado->escalaGlobal); //ancho de los botones, arrancando desde 300px
     escalado->botonAlto  = (int)(60  * escalado->escalaGlobal); //alto de los botones, arrancando desde 60px
@@ -41,5 +41,7 @@ void calcularEscaladoUI(EscaladoUI* escalado, int anchoPantalla, int altoPantall
     escalado->margenInicialY = (int)((escalado->logoPosY + escalado->logoAlto + 40) * escalado->escalaGlobal); //calculamos donde tienen que arrancar los botones, debajo del logo y con un margen de 40px
     escalado->tamanioFuenteTexto = (int)(24 * escalado->escalaGlobal); //tamaño de la fuente del texto, arrancando desde 24px
     escalado->tamanioFuenteHUD   = (int)(36 * escalado->escalaGlobal); //tamaño de la fuente del HUD, arrancando desde 36px
-    escalado->paddingSuperior = (int)(PADDING_SUPERIOR_BASE * escalado->escalaGlobal); //para que la interfaz no quede pegada al borde superior
+    escalado->tamanioFuenteHUDEXTRA   = (int)( 15* escalado->escalaGlobal); //tamaño de la fuente del HUD, arrancando desde 36px
+    escalado->tamanioHUD = (int)(TAMANIO_HUD_BASE * escalado->escalaGlobal); //TAMAÑO hud
+    escalado->tamanioHUDextra = (int)(TAMANIO_HUD_EXTRA_BASE * escalado->escalaGlobal);
 }

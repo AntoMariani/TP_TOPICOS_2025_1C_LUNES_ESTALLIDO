@@ -293,7 +293,7 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
         juego.totalMinasInicial = totalMinas;
     }
 
-    
+
     juego.tamCasilla = calcularTamCasilla(dimension);
     //juego.tamPixel = juego.tamCasilla / 8;
     juego.minasMarcadas = 0;
@@ -387,11 +387,16 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                 if (x >= botonDeshacer.x && x <= botonDeshacer.x + botonDeshacer.w &&
                     y >= botonDeshacer.y && y <= botonDeshacer.y + botonDeshacer.h)
                 {
-                        if (!deshacerFotoTablero(&juego->historial, juego))
+                        if (!deshacerFotoTablero(&juego->historial, juego, ventana))
                         {
                             printf("No se puede deshacer: ya estás en el estado inicial.\n");
                         }
-                                break;
+                        anchoVentana = juego->tamCasilla * juego->dimension;
+                        altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
+                        SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
+                        calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+                        obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
+                    break;
                 }
 
                 if (x >= botonCheat.x && x <= botonCheat.x + botonCheat.w &&
@@ -414,9 +419,15 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                 if (x >= botonRehacer.x && x <= botonRehacer.x + botonRehacer.w &&
                     y >= botonRehacer.y && y <= botonRehacer.y + botonRehacer.h)
                 {
-                    if (!rehacerFotoTablero(&juego->historial, juego)){
+                    if (!rehacerFotoTablero(&juego->historial, juego, ventana)){
                         printf("No hay nada para rehacer\n");
                     }
+                    anchoVentana = juego->tamCasilla * juego->dimension;
+                    altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
+                    SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
+                    calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+                    obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
+
                     break;
                 }
 
@@ -444,6 +455,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
                         SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
                         calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+                        obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
 
                         //una vez que reescale la ventana, ahora tengo que generar el nuevo tablero y asignarle memoria
 
@@ -474,9 +486,11 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         printf("TOTAL MINAS a llenar %d\n",totalMinasALlenar);
                         juego->totalMinas = totalMinasNuevo;
 
+
                         juego->tablero = nuevoTablero;
 
                         llenarElRestoDeMinas(totalMinasALlenar,juego->dimension, juego);
+                        guardarFotoTablero(&juego->historial, juego);
 
                         obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
                       &botonReset, &botonAgrandar, &botonSalir, juego);
@@ -488,7 +502,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                          y >= botonSalir.y && y <= botonSalir.y + botonSalir.h)
                 {
                     printf("CLICK: SALIR\n");
-                    ejecutando = false; // o exit(0), según tu lógica
+                    ejecutando = false;
                 }
 
                 //si el click fue en el tablero

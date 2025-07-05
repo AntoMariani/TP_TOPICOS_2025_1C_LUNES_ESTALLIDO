@@ -63,6 +63,7 @@ typedef struct {
     Casilla** tablero;
     int minasMarcadas; //cuantas minas estaban marcadas
     int dimension;
+    int totalMinas;
 } FotoTablero;
 
 //historial

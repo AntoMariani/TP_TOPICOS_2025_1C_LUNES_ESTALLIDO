@@ -46,9 +46,10 @@ void guardarFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
     if (hs->posActual < hs->cantidad) {
         for (int i = hs->posActual; i < hs->cantidad; i++) {
             if (hs->lista[i].tablero) {
-                liberarTablero(hs->lista[i].tablero, juego->dimension);
+                liberarTablero(hs->lista[i].tablero, hs->lista[i].dimension);
                 hs->lista[i].tablero = NULL;
             }
+            hs->lista[i].dimension = 0;
         }
         hs->cantidad = hs->posActual;
     }
@@ -74,10 +75,12 @@ void guardarFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
 
     s.minasMarcadas = juego->minasMarcadas;
     s.dimension = juego->dimension;
+    s.totalMinas = juego->totalMinas;
 
     hs->lista[hs->posActual] = s;
     hs->posActual++;
-    hs->cantidad++;
+    if (hs->posActual > hs->cantidad)
+        hs->cantidad = hs->posActual;
 
     printf("Snapshot guardado. posActual=%d, cantidad=%d\n", hs->posActual, hs->cantidad);
 }
@@ -85,19 +88,20 @@ void guardarFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
 
 
 //Restaura el estado anterior del juego
-bool deshacerFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
+bool deshacerFotoTablero(HistorialFotosTablero* hs, Juego* juego, SDL_Window * ventana) {
     if (hs->lista == NULL || hs->cantidad == 0 || hs->posActual <= 1)
         return false;
 
-    // Retrocedemos 1 posición
     hs->posActual--;
-
     FotoTablero* s = &hs->lista[hs->posActual - 1];
 
     liberarTablero(juego->tablero, juego->dimension);
-    juego->tablero = copiarTablero(s->tablero, juego->dimension);
+    juego->tablero = copiarTablero(s->tablero, s->dimension);
 
+    juego->dimension = s->dimension;
+    juego->tamCasilla = calcularTamCasilla(juego->dimension);
     juego->minasMarcadas = s->minasMarcadas;
+    juego->totalMinas = s->totalMinas;
 
     printf("Deshacer: posActual ahora=%d, cantidad=%d\n", hs->posActual, hs->cantidad);
     return true;
@@ -107,22 +111,27 @@ bool deshacerFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
 
 
 //Aplica el siguiente estado si existe
-bool rehacerFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
+bool rehacerFotoTablero(HistorialFotosTablero* hs, Juego* juego, SDL_Window * ventana) {
     printf("Click en botón Rehacer\n");
 
     if (!hs || hs->lista == NULL || hs->posActual >= hs->cantidad)
         return false;
 
+    printf("Intentando rehacer en posActual=%d, cantidad=%d\n", hs->posActual, hs->cantidad);
+
     FotoTablero* s = &hs->lista[hs->posActual];
 
     liberarTablero(juego->tablero, juego->dimension);
-    juego->tablero = copiarTablero(s->tablero, juego->dimension);
+    juego->tablero = copiarTablero(s->tablero, s->dimension);
 
+    juego->dimension = s->dimension;
+    juego->tamCasilla = calcularTamCasilla(juego->dimension);
     juego->minasMarcadas = s->minasMarcadas;
+    juego->totalMinas = s->totalMinas;
 
-    printf("Rehacer: posActual ahora=%d, cantidad=%d\n", hs->posActual + 1, hs->cantidad);
     hs->posActual++;
 
+    printf("Rehacer: posActual ahora=%d, cantidad=%d\n", hs->posActual, hs->cantidad);
     return true;
 }
 

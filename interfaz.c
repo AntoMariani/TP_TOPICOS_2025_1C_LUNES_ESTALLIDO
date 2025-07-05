@@ -211,7 +211,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     SDL_Color colorBotonRehacerDeshacer = {100,100,100,255}; //color gris claro para los botones de deshacer y rehacer
-
+    //los dibujo
     dibujarBotonPlano(renderer, botonDeshacer, colorBotonRehacerDeshacer);
     dibujarBotonPlano(renderer, botonRehacer, colorBotonRehacerDeshacer);
     dibujarTexto(renderer, fuenteHUD, "<", botonDeshacer, colorLCD);

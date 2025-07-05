@@ -93,7 +93,7 @@ void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer)
 }
 
 
-void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD, TTF_Font * fuenteBotones, int clicksCheat, bool cheatEnPeriodoActivo, Uint32 cheatActivadoTiempo)
+void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD, TTF_Font * fuenteBotones, int clicksCheat, bool cheatEnPeriodoActivo, Uint32 cheatActivadoTiempo, bool puedeRehacer, bool puedeDeshacer, bool puedeAgrandar)
 {
     //verificacion de punteros validos
     if (!renderer || !juego || !fuente || !fuenteHUD) {
@@ -155,12 +155,11 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 
     char minasTexto[4]; //para mostrar las minas restantes
     sprintf(minasTexto, "%03d", juego->totalMinas - juego->minasMarcadas); //formatea el texto con las minas restantes, mestra un numero de 3 digitos, rellenando con ceros a la izq
-    SDL_Color colorLCD = colores[CNH];
 
     //generamos la superficie de texto con el contador de minas, es una imagen en memoria "surface" que contiene el texto correspondiente dibujado con la fuente y color correspondientes
     //se tiene que si o si usar una surface para crear una textura con la funcion correspondiente
     // TTF_RenderText_Blended crea una surface con el texto renderizado, el color y la fuente especificados
-    SDL_Surface* surfaceMinas = TTF_RenderText_Blended(fuenteHUD, minasTexto, colorLCD);
+    SDL_Surface* surfaceMinas = TTF_RenderText_Blended(fuenteHUD, minasTexto, colores[NARANJA_FUERTE]);
 
     //conviertimos el surface en RAM  a una textura que puede ser usada por el renderer de SDL para dibujar en pantalla
     SDL_Texture* texturaMinas = SDL_CreateTextureFromSurface(renderer, surfaceMinas);
@@ -187,7 +186,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     //idem minas
     char tiempoTexto[4];
     sprintf(tiempoTexto, "%03d", segundosTranscurridos);
-    SDL_Surface* surfaceTiempo = TTF_RenderText_Blended(fuenteHUD, tiempoTexto, colorLCD);
+    SDL_Surface* surfaceTiempo = TTF_RenderText_Blended(fuenteHUD, tiempoTexto, colores[NARANJA_FUERTE]);
     SDL_Texture* texturaTiempo = SDL_CreateTextureFromSurface(renderer, surfaceTiempo);
 
     SDL_Rect rectTiempo = {derecha - anchoMaxTexto,paddingSuperior, anchoMaxTexto, surfaceTiempo->h}; // calculamos segun el ancho y el padding, 20 es el padding desde la derecha, 10 es el padding desde arriba
@@ -210,21 +209,15 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    SDL_Color colorBotonRehacerDeshacer = {100,100,100,255}; //color gris claro para los botones de deshacer y rehacer
-    //los dibujo
-    dibujarBotonPlano(renderer, botonDeshacer, colorBotonRehacerDeshacer);
-    dibujarBotonPlano(renderer, botonRehacer, colorBotonRehacerDeshacer);
-    dibujarTexto(renderer, fuenteHUD, "<", botonDeshacer, colorLCD);
-    dibujarTexto(renderer, fuenteHUD, ">", botonRehacer, colorLCD);
+    // Botones con lógica de habilitado
+    dibujarBotonConTexto(renderer, botonDeshacer, colores[GRIS_REDO_UNDO], puedeDeshacer, fuenteHUD, "<", colores[NARANJA_FUERTE]);
+    dibujarBotonConTexto(renderer, botonRehacer,  colores[GRIS_REDO_UNDO], puedeRehacer,  fuenteHUD, ">", colores[NARANJA_FUERTE]);
+    dibujarBotonConTexto(renderer, botonAgrandar, colores[CNH],         puedeAgrandar, fuenteBotones, "EXPAND", colores[CB]);
 
-    dibujarBotonPlano(renderer, botonReset, colores[CNH]);
-    dibujarBotonPlano(renderer, botonAgrandar, colores[CNH]);
-    dibujarBotonPlano(renderer, botonSalir, colores[ROJO_ALERTA]);
+    // Botones siempre habilitados
+    dibujarBotonConTexto(renderer, botonReset, colores[CNH], true, fuenteBotones, "RESET", colores[CB]);
+    dibujarBotonConTexto(renderer, botonSalir, colores[ROJO_ALERTA],  true, fuenteBotones, "EXIT",  colores[CB]);
 
-    SDL_Color colorTexto = {255, 255, 255, 255};    // blanco
-    dibujarTexto(renderer, fuenteBotones, "RESET", botonReset, colorTexto);
-    dibujarTexto(renderer, fuenteBotones, "EXPAND", botonAgrandar, colorTexto);
-    dibujarTexto(renderer, fuenteBotones, "EXIT", botonSalir, colorTexto);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -334,11 +327,25 @@ void dibujarOverlayCheat(SDL_Renderer* renderer, Juego* juego)
 //    }
 //}
 
-void dibujarBotonPlano(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFondo) {
-    SDL_SetRenderDrawColor(renderer, colorFondo.r, colorFondo.g, colorFondo.b, colorFondo.a); //color
-    SDL_RenderFillRect(renderer, &rect); //rellena de ese color
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); //configura color de dibujo para el borde
-    SDL_RenderDrawRect(renderer, &rect); //dibuna borde
+void dibujarBotonConTexto(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color colorFondo, bool habilitado, TTF_Font* fuente, const char* texto, SDL_Color colorTexto) {
+    // modo blend transparencia
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // Fondo con posible transparencia
+    SDL_Color fondo = colorFondo;
+    fondo.a = habilitado ? 255 : 100;
+    SDL_SetRenderDrawColor(renderer, fondo.r, fondo.g, fondo.b, fondo.a);
+    SDL_RenderFillRect(renderer, &rect);
+
+    // Borde blanco con + transparencia si ta deshabilitado
+    Uint8 alphaBorde = habilitado ? 255 : 100;
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, alphaBorde);
+    SDL_RenderDrawRect(renderer, &rect);
+
+    // Textosi esta deshabilitado semi transparente
+    SDL_Color colorTxtFinal = colorTexto;
+    colorTxtFinal.a = habilitado ? 255 : 100;
+    dibujarTexto(renderer, fuente, texto, rect, colorTxtFinal);
 }
 
 void obtenerRectBotonesHUD(SDL_Rect* deshacer, SDL_Rect* cheat, SDL_Rect* rehacer,
@@ -499,18 +506,9 @@ opcionesMenuPrincipal mostrarMenuPrincipal(SDL_Renderer* renderer, SDL_Window* v
         int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES; //cada 300ms cambia frame del logo
         dibujarLogo(renderer, ventana, frameLogo); //dibuja el logo en la ventana
 
-        //definimos colores
-        SDL_Color fondo = {70,70,70,255}, texto = {255,255,255,255};
-
-        //definimos botones
-        dibujarBotonPlano(renderer, botonJugar, fondo);
-        dibujarBotonPlano(renderer, botonEstadisticas, fondo);
-        dibujarBotonPlano(renderer, botonSalir, fondo);
-
-        //dibujamos texto
-        dibujarTexto(renderer, fuente, "JUGAR", botonJugar, texto);
-        dibujarTexto(renderer, fuente, "ESTADISTICAS", botonEstadisticas, texto);
-        dibujarTexto(renderer, fuente, "SALIR", botonSalir, texto);
+        dibujarBotonConTexto(renderer, botonJugar, colores[FONDO_BOTONES], true, fuente, "JUGAR", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonEstadisticas, colores[FONDO_BOTONES], true, fuente, "ESTADISTICAS", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonSalir, colores[FONDO_BOTONES], true, fuente, "SALIR", colores[CNH]);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -555,15 +553,9 @@ opcionesMenuTipoPartida mostrarMenuTipoPartida(SDL_Renderer* renderer, SDL_Windo
         int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES;
         dibujarLogo(renderer, ventana, frameLogo);
 
-        SDL_Color fondo = {70,70,70,255}, texto = {255,255,255,255};
-
-        dibujarBotonPlano(renderer, botonNueva, fondo);
-        dibujarBotonPlano(renderer, botonCargar, fondo);
-        dibujarBotonPlano(renderer, botonMenuPrincipal, fondo);
-
-        dibujarTexto(renderer, fuente, "NUEVA PARTIDA", botonNueva, texto);
-        dibujarTexto(renderer, fuente, "CARGAR PARTIDA", botonCargar, texto);
-        dibujarTexto(renderer, fuente, "MENU PRINCIPAL", botonMenuPrincipal, texto);
+        dibujarBotonConTexto(renderer, botonNueva, colores[FONDO_BOTONES], true, fuente, "NUEVA PARTIDA", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonCargar, colores[FONDO_BOTONES], true, fuente, "CARGAR PARTIDA", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonMenuPrincipal, colores[FONDO_BOTONES], true, fuente, "MENU PRINCIPAL", colores[CNH]);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -630,91 +622,18 @@ opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window*
         int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES;
         dibujarLogo(renderer, ventana, frameLogo);
 
-        SDL_Color fondo = {70,70,70,255}, texto = {255,255,255,255};
-
-        dibujarBotonPlano(renderer, botonFacil, fondo);
-        dibujarBotonPlano(renderer, botonMedio, fondo);
-        dibujarBotonPlano(renderer, botonDificil, fondo);
-        dibujarBotonPlano(renderer, botonSuper, fondo);
-        dibujarBotonPlano(renderer, botonCustom, fondo);
-        dibujarBotonPlano(renderer, botonVolver, fondo);
-
-        dibujarTexto(renderer, fuente, "FACIL", botonFacil, texto);
-        dibujarTexto(renderer, fuente, "MEDIO", botonMedio, texto);
-        dibujarTexto(renderer, fuente, "DIFICIL", botonDificil, texto);
-        dibujarTexto(renderer, fuente, "SSJ", botonSuper, texto);
-        dibujarTexto(renderer, fuente, "CUSTOM", botonCustom, texto);
-        dibujarTexto(renderer, fuente, "VOLVER", botonVolver, texto);
+        dibujarBotonConTexto(renderer, botonFacil, colores[FONDO_BOTONES], true, fuente, "FACIL", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonMedio, colores[FONDO_BOTONES], true, fuente, "MEDIO", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonDificil, colores[FONDO_BOTONES], true, fuente, "DIFICIL", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonSuper, colores[FONDO_BOTONES], true, fuente, "SSJ", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonCustom, colores[FONDO_BOTONES], true, fuente, "CUSTOM", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonVolver, colores[FONDO_BOTONES], true, fuente, "VOLVER", colores[CNH]);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16); //espera 16ms para no saturar el CPU, lo vimos varias veces en tutoriales asi que decidimos sumarlo
     }
     return DIFICULTAD_VOLVER;
 }
-
-//void pedirNombreUsuario(SDL_Renderer* renderer, TTF_Font* fuente, char* nombreUsuario) {
-//
-//    SDL_StartTextInput(); //habilitamos texto
-//
-//    nombreUsuario[0] = '\0'; //inicializamos el nombre de usuario como una cadena vacía
-//    int salir = 0; //flag salida
-//    SDL_Event evento;
-//
-//    while (!salir) {
-//        while (SDL_PollEvent(&evento)) {
-//            if (evento.type == SDL_QUIT) {
-//                exit(0);
-//            }
-//            if (evento.type == SDL_TEXTINPUT) {
-//                if (strlen(nombreUsuario) < MAX_NOMBRE - 1) {
-//                    strcat(nombreUsuario, evento.text.text); //copia lo que entro el usuario, concatena al final mientras tenga <5 caracteres
-//                }
-//            }
-//            if (evento.type == SDL_KEYDOWN) { //si apreta borrar y el nombre no esta vacio borra 1 caracter, si le da enter y el nombre no esta vacio confirma el nombre
-//                if (evento.key.keysym.sym == SDLK_BACKSPACE && strlen(nombreUsuario) > 0) {
-//                    nombreUsuario[strlen(nombreUsuario) - 1] = '\0'; //strlen(nombreUsuario) - 1 es el ultimo caracter, lo pone en 0 para borrar
-//                }
-//                if (evento.key.keysym.sym == SDLK_RETURN && strlen(nombreUsuario) > 0) { // si presiono enter se fija si escribi 1 caracter por lo menos y sale del bucle
-//                    salir = 1;
-//                }
-//            }
-//        }
-//
-//        //limpia pantalla a negro
-//        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-//        SDL_RenderClear(renderer);
-//
-//
-//        //color blanco texto
-//        SDL_Color color = {255, 255, 255, 255};
-//
-//        //dibuja ingrese su nombre (idem otros surfaces y textures) y libera memoria
-//        SDL_Surface* superficieTexto = TTF_RenderText_Blended(fuente, "Ingrese su nombre:", color);
-//        SDL_Texture* texturaTexto = SDL_CreateTextureFromSurface(renderer, superficieTexto);
-//        SDL_Rect rect = {100, 100, superficieTexto->w, superficieTexto->h};
-//        SDL_RenderCopy(renderer, texturaTexto, NULL, &rect);
-//        SDL_FreeSurface(superficieTexto);
-//        SDL_DestroyTexture(texturaTexto);
-//
-//
-//        //dibuja el nombre que el user escribe y va liberando mem
-//        superficieTexto = TTF_RenderText_Blended(fuente, nombreUsuario, color);
-//        texturaTexto = SDL_CreateTextureFromSurface(renderer, superficieTexto);
-//        rect.y = 200;
-//        rect.w = superficieTexto->w;
-//        rect.h = superficieTexto->h;
-//        SDL_RenderCopy(renderer, texturaTexto, NULL, &rect);
-//        SDL_FreeSurface(superficieTexto);
-//        SDL_DestroyTexture(texturaTexto);
-//
-//        //actualiza pantalla
-//        SDL_RenderPresent(renderer);
-//        SDL_Delay(16);
-//    }
-//
-//    //frena el input
-//    SDL_StopTextInput();
-//}
 
 opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, char* nombreUsuario)
 {
@@ -787,9 +706,7 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
         int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES;
         dibujarLogo(renderer, ventana, frameLogo);
 
-        SDL_Color fondo = {70,70,70,255}, textoColor = {255, 255, 255, 255};
-
-        SDL_Surface* surfaceTitulo = TTF_RenderText_Blended(fuente, "Ingrese su Nickname", textoColor);
+        SDL_Surface* surfaceTitulo = TTF_RenderText_Blended(fuente, "Ingrese su Nickname", colores[CNH]);
         SDL_Texture* textureTitulo = SDL_CreateTextureFromSurface(renderer, surfaceTitulo);
         SDL_Rect rectTextoTitulo = {
             rectTitulo.x + (rectTitulo.w - surfaceTitulo->w)/2,
@@ -808,7 +725,7 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
 
         if (strlen(nombreUsuario) > 0)
         {
-            SDL_Surface* surfaceNombre = TTF_RenderText_Blended(fuente, nombreUsuario, textoColor);
+            SDL_Surface* surfaceNombre = TTF_RenderText_Blended(fuente, nombreUsuario, colores[CB]);
             SDL_Texture* textureNombre = SDL_CreateTextureFromSurface(renderer, surfaceNombre);
             SDL_Rect rectNombre = {
                 rectTexto.x + (rectTexto.w - surfaceNombre->w)/2,
@@ -821,11 +738,8 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
             SDL_DestroyTexture(textureNombre);
         }
 
-        dibujarBotonPlano(renderer, botonJugar, fondo);
-        dibujarTexto(renderer, fuente, "JUGAR", botonJugar, textoColor);
-
-        dibujarBotonPlano(renderer, botonVolver, fondo);
-        dibujarTexto(renderer, fuente, "VOLVER", botonVolver, textoColor);
+        dibujarBotonConTexto(renderer, botonJugar, colores[FONDO_BOTONES], true, fuente, "JUGAR", colores[CNH]);
+        dibujarBotonConTexto(renderer, botonVolver, colores[FONDO_BOTONES], true, fuente, "VOLVER", colores[CNH]);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -918,8 +832,7 @@ void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano)
 
         //texto superpuesto
         const char* texto = gano ? ":) GANASTE" : " :( PERDISTE";
-        SDL_Color colorTexto = {255, 150, 0, 255};
-        SDL_Surface* sTexto = TTF_RenderText_Blended(fuenteHUD, texto, colorTexto);
+        SDL_Surface* sTexto = TTF_RenderText_Blended(fuenteHUD, texto, colores[CB]);
         SDL_Texture* tTexto = SDL_CreateTextureFromSurface(renderer, sTexto);
         SDL_Rect rectTexto = { //centra texto
             (overlay.w - sTexto->w) / 2,

@@ -610,8 +610,11 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
         //determina si el cheat esta activo
         bool cheatEnPeriodoActivo = (cheatEnUso && (SDL_GetTicks() - cheatActivadoTiempo) <= DURACION_CHEAT_MS);
 
+        bool puedeDeshacer = juego->historial.posActual > 1;
+        bool puedeRehacer = juego->historial.posActual < juego->historial.cantidad;
+        bool puedeAgrandar = juego->dimension < 30;
         //dibuja tablero e interfaz
-        dibujarTablero(renderer, juego, fuenteTexto, fuenteHUD, fuenteBotones, clicksCheat, cheatEnPeriodoActivo, cheatActivadoTiempo);
+        dibujarTablero(renderer, juego, fuenteTexto, fuenteHUD, fuenteBotones, clicksCheat, cheatEnPeriodoActivo, cheatActivadoTiempo, puedeRehacer, puedeDeshacer, puedeAgrandar);
 
         //si termino el periodo del cheat lo desactiva
         if (!cheatEnPeriodoActivo) { cheatEnUso = false; }

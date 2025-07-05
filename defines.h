@@ -45,6 +45,9 @@
 #define ROJO_ALERTA     11
 #define CASILLA_OCULTA  12
 #define CASILLA_REVELADA 13
+#define FONDO_BOTONES 14
+#define NARANJA_FUERTE 15
+#define GRIS_REDO_UNDO 16
 
 
 

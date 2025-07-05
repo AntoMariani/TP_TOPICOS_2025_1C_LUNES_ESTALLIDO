@@ -159,9 +159,6 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
             SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
             SDL_RenderClear(renderer);
 
-            SDL_Color colorNaranja = {255, 150, 0, 255};
-            SDL_Color textoColor = {255, 255, 255, 255};
-
             // Calcula tamaños y posiciones para los textos
             int alturaTitulo = (int)(30 * escalado.escalaGlobal);
             int alturaRegistro = (int)(22 * escalado.escalaGlobal);
@@ -180,7 +177,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
             // Dibuja el título principal "ESTADISTICAS"
             int tamanioTitulo = (int)(escalado.tamanioFuenteTexto * 1.5f);
             TTF_Font* fuenteTitulo = TTF_OpenFont("fnt/DragonBall.ttf", tamanioTitulo);
-            SDL_Surface* sTitulo = TTF_RenderText_Blended(fuenteTitulo, "ESTADISTICAS", colorNaranja);
+            SDL_Surface* sTitulo = TTF_RenderText_Blended(fuenteTitulo, "ESTADISTICAS", colores[NARANJA_FUERTE]);
             SDL_Texture* tTitulo = SDL_CreateTextureFromSurface(renderer, sTitulo);
             SDL_Rect rTitulo = { (escalado.anchoVentanaMenu - sTitulo->w) / 2, posY, sTitulo->w, sTitulo->h };
             SDL_RenderCopy(renderer, tTitulo, NULL, &rTitulo);
@@ -194,7 +191,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
             for (int i = 0; i < 4; i++)
             {
                 // Dibuja el nombre de la dificultad
-                SDL_Surface* sDif = TTF_RenderText_Blended(fuenteTexto, dificultades[i], colorNaranja);
+                SDL_Surface* sDif = TTF_RenderText_Blended(fuenteTexto, dificultades[i], colores[NARANJA_FUERTE]);
                 SDL_Texture* tDif = SDL_CreateTextureFromSurface(renderer, sDif);
                 SDL_Rect rDif = { (escalado.anchoVentanaMenu - sDif->w) / 2, posY, sDif->w, sDif->h };
                 SDL_RenderCopy(renderer, tDif, NULL, &rDif);
@@ -212,7 +209,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
                     else
                         sprintf(buffer, "%-10s %5s", "-", "-");
 
-                    SDL_Surface* sLin = TTF_RenderText_Blended(fuenteHUD, buffer, textoColor);
+                    SDL_Surface* sLin = TTF_RenderText_Blended(fuenteHUD, buffer, colores[CB]);
                     SDL_Texture* tLin = SDL_CreateTextureFromSurface(renderer, sLin);
                     SDL_Rect rLin = { (escalado.anchoVentanaMenu - sLin->w) / 2, posY, sLin->w, sLin->h };
                     SDL_RenderCopy(renderer, tLin, NULL, &rLin);
@@ -226,8 +223,7 @@ void mostrarEstadisticas(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* 
             }
 
             // Dibuja el botón "VOLVER"
-            dibujarBotonPlano(renderer, botonVolver, (SDL_Color){70,70,70,255});
-            dibujarTexto(renderer, fuenteTexto, "VOLVER", botonVolver, textoColor);
+            dibujarBotonConTexto(renderer, botonVolver, colores[FONDO_BOTONES], true, fuenteTexto, "VOLVER", colores[CNH]);
 
             // Actualiza la pantalla
             SDL_RenderPresent(renderer);

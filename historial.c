@@ -32,11 +32,6 @@ void inicializarHistorialFotosTablero(HistorialFotosTablero* hs) {
 
 //Guarda el estado actual del juego como snapshot
 void guardarFotoTablero(HistorialFotosTablero* hs, Juego* juego) {
-
-    printf("DEBUG guardarFotoTablero: hs=%p, juego=%p, tablero=%p, dimension=%d\n",
-       hs, juego, juego ? juego->tablero : NULL, juego ? juego->dimension : -1);
-
-
     if (!hs || !juego || !juego->tablero || juego->dimension <= 0) {
         printf("ERROR: Estado inválido al guardar snapshot\n");
         return;

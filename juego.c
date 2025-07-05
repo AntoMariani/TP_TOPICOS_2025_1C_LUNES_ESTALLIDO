@@ -9,11 +9,10 @@ Casilla** crearTablero(int dimension) {
     for (int i = 0; i < dimension; i++) {
         tablero[i] = malloc(dimension * sizeof(Casilla));
         if (!tablero[i]) {
-            // liberamos lo anterior para evitar memory leaks
-            for (int j = 0; j < i; j++) free(tablero[j]);
-            free(tablero);
+            liberarTablero(tablero, i);  // Solo libera hasta donde se había asignado
             return NULL;
         }
+
         for (int j = 0; j < dimension; j++) {
             tablero[i][j] = (Casilla){ false, false, false, 0, 0, 0 };
         }

@@ -138,13 +138,7 @@ void liberarHistorialFotosTablero(HistorialFotosTablero* hs, int dimension) {
     for (int i = 0; i < hs->cantidad; i++) {
         Casilla** tablero = hs->lista[i].tablero;
         if (tablero != NULL) {
-            for (int j = 0; j <  hs->lista[i].dimension; j++) {
-                if (tablero[j] != NULL) {
-                    free(tablero[j]);
-                    tablero[j] = NULL;
-                }
-            }
-            free(tablero);
+            liberarTablero(tablero, hs->lista[i].dimension);
             hs->lista[i].tablero = NULL;
         }
     }

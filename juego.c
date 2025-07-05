@@ -1,6 +1,33 @@
 #include "juego.h"
 #include "log.h"
 
+
+Casilla** crearTablero(int dimension) {
+    Casilla** tablero = malloc(dimension * sizeof(Casilla*));
+    if (!tablero) return NULL;
+
+    for (int i = 0; i < dimension; i++) {
+        tablero[i] = malloc(dimension * sizeof(Casilla));
+        if (!tablero[i]) {
+            // liberamos lo anterior para evitar memory leaks
+            for (int j = 0; j < i; j++) free(tablero[j]);
+            free(tablero);
+            return NULL;
+        }
+        for (int j = 0; j < dimension; j++) {
+            tablero[i][j] = (Casilla){ false, false, false, 0, 0, 0 };
+        }
+    }
+
+    return tablero;
+}
+
+void liberarTablero(Casilla** tablero, int dimension) {
+    for (int i = 0; i < dimension; i++)
+        free(tablero[i]);
+    free(tablero);
+}
+
 void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
 {
     FILE* archivo = fopen(archivoConfiguracion, "r"); //abre en read
@@ -72,24 +99,9 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
     //juego->tamPixel = juego->tamCasilla / 8;
 
     //reserva memoria para el array de punteros a filas del tablero
-    juego->tablero = malloc(juego->dimension * sizeof(Casilla*));
-    if (!juego->tablero) {
-        printf("Fallo al asignar memoria dinámica para el tablero\n");
+    juego->tablero = crearTablero(juego->dimension);
+    if (!juego->tablero)
         chequearError(NO_ASIGNO_MEM_TABLERO, NO_ASIGNO_MEM_TABLERO);
-    }
-
-    //para cada fila reserva memoria para las casillas de esa fila
-    for (int i = 0; i < juego->dimension; i++) {
-        juego->tablero[i] = malloc(juego->dimension * sizeof(Casilla));
-        if (!juego->tablero[i]) {
-            printf("No se pudo asignar memoria para la fila %d\n", i);
-            chequearError(NO_ASIGNO_MEM_FILA_TABLERO, NO_ASIGNO_MEM_FILA_TABLERO);
-        }
-
-        for (int j = 0; j < juego->dimension; j++) { //inicializa cada casilla de la fila, sin mina, no revelada, no marcada, sin minas vecinas
-            juego->tablero[i][j] = (Casilla){ false, false, false, 0, 0 };
-        }
-    }
 
 }
 
@@ -302,13 +314,9 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
     juego.minaExplotadaFila = -1;
     juego.minaExplotadaCol = -1;
 
-    juego.tablero = malloc(dimension * sizeof(Casilla*));
-    for (int i = 0; i < dimension; i++) {
-        juego.tablero[i] = malloc(dimension * sizeof(Casilla));
-        for (int j = 0; j < dimension; j++) {
-            juego.tablero[i][j] = (Casilla){ false, false, false, 0, 0, 0 };
-        }
-    }
+    juego.tablero = crearTablero(dimension);
+    if (!juego.tablero)
+        chequearError(NO_ASIGNO_MEM_TABLERO, NO_ASIGNO_MEM_TABLERO);
 
     inicializarHistorialFotosTablero(&juego.historial);
 
@@ -645,10 +653,12 @@ void reiniciarPartida(Juego* juego, opcionesMenuDificultad dificultad, SDL_Windo
     SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
     calcularEscaladoUI(&escalado, anchoVentana, altoVentana);
 
-    juego->tablero = malloc(juego->dimension * sizeof(Casilla*));
-    for (int i = 0; i < juego->dimension; i++)
-        juego->tablero[i] = malloc(juego->dimension * sizeof(Casilla));
+    // Crear el tablero con valores por defecto
+    juego->tablero = crearTablero(juego->dimension);
+    if (!juego->tablero)
+        chequearError(NO_ASIGNO_MEM_TABLERO, NO_ASIGNO_MEM_TABLERO);
 
+    // Resetear campos de una nueva partida
     juego->minasMarcadas = 0;
     juego->minaExplotadaFila = -1;
     juego->minaExplotadaCol = -1;
@@ -657,12 +667,9 @@ void reiniciarPartida(Juego* juego, opcionesMenuDificultad dificultad, SDL_Windo
     juego->tiempoInicio = SDL_GetTicks();
     juego->tiempoFin = 0;
 
+    // Setear esferas
     for (int fila = 0; fila < juego->dimension; fila++) {
         for (int col = 0; col < juego->dimension; col++) {
-            juego->tablero[fila][col].esMina = false;
-            juego->tablero[fila][col].revelada = false;
-            juego->tablero[fila][col].marcada = false;
-            juego->tablero[fila][col].minasVecinas = 0;
             juego->tablero[fila][col].esfera = rand() % 7 + 1;
             juego->tablero[fila][col].esferaAlPerder = rand() % 7 + 1;
         }

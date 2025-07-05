@@ -6,7 +6,6 @@
 #include "juego.h"
 
 Casilla** copiarTablero(Casilla** original, int dimension);
-void liberarTablero(Casilla** tablero, int dimension);
 void inicializarHistorialFotosTablero(HistorialFotosTablero* hs);
 void guardarFotoTablero(HistorialFotosTablero* hs, Juego* juego);
 bool deshacerFotoTablero(HistorialFotosTablero* hs, Juego* juego, SDL_Window* ventana);

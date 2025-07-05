@@ -5,22 +5,18 @@
 
 //Crea una matriz nueva y copia todas las casillas
 Casilla** copiarTablero(Casilla** original, int dimension) {
-    Casilla** copia = malloc(dimension * sizeof(Casilla*));
+    if (!original || dimension <= 0)
+        return NULL;
+
+    Casilla** copia = crearTablero(dimension);
+    if (!copia)
+        return NULL;
 
     for (int i = 0; i < dimension; i++) {
-        copia[i] = malloc(dimension * sizeof(Casilla));
         memcpy(copia[i], original[i], dimension * sizeof(Casilla));
     }
 
     return copia;
-}
-
-//Libera un tablero completo
-void liberarTablero(Casilla** tablero, int dimension) {
-    for (int i = 0; i < dimension; i++) {
-        free(tablero[i]);
-    }
-    free(tablero);
 }
 
 //Inicializa el historial

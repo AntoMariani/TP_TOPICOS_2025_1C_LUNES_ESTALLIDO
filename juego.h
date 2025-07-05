@@ -13,6 +13,8 @@
 #include "interfaz.h"
 #include "historial.h"
 
+Casilla** crearTablero(int dimension);
+void liberarTablero(Casilla** tablero, int dimension);
 void inicializarJuego(Juego* juego, const char* archivoConfiguracion);
 int calcularTamCasilla(int dimension);
 void llenar(Juego* juego,int filaInicial, int colInicial);

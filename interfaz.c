@@ -54,7 +54,6 @@ int crearVentana(SDL_Window** ventana, int width, int height)
     }
 }
 
-
 int crearRenderer(SDL_Renderer** renderer, SDL_Window** ventana)
 {
     //idem ventana, pero SDL_RENDERER_ACCELERATED es para usar la GPU de estar disponible entiendo
@@ -91,7 +90,6 @@ void inicializarVentanaYRenderer(SDL_Window** ventana, SDL_Renderer** renderer)
     chequearError(crearVentana(ventana, escalado.anchoVentanaMenu, escalado.altoVentanaMenu), NO_GENERO_VENTANA);
     chequearError(crearRenderer(renderer, ventana), NO_GENERO_RENDERER);
 }
-
 
 void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_Font* fuenteHUD, TTF_Font * fuenteBotones, int clicksCheat, bool cheatEnPeriodoActivo, Uint32 cheatActivadoTiempo, bool puedeRehacer, bool puedeDeshacer, bool puedeAgrandar)
 {
@@ -348,9 +346,7 @@ void dibujarBotonConTexto(SDL_Renderer* renderer, SDL_Rect rect, SDL_Color color
     dibujarTexto(renderer, fuente, texto, rect, colorTxtFinal);
 }
 
-void obtenerRectBotonesHUD(SDL_Rect* deshacer, SDL_Rect* cheat, SDL_Rect* rehacer,
-                           SDL_Rect* reset, SDL_Rect* agrandar, SDL_Rect* salir,
-                           Juego* juego) {
+void obtenerRectBotonesHUD(SDL_Rect* deshacer, SDL_Rect* cheat, SDL_Rect* rehacer, SDL_Rect* reset, SDL_Rect* agrandar, SDL_Rect* salir,Juego* juego) {
     int anchoVentana = juego->tamCasilla * juego->dimension;
     int centroX = anchoVentana / 2;
     int centroY = escalado.tamanioHUDextra + escalado.tamanioHUD / 2;
@@ -411,7 +407,6 @@ void obtenerRectBotonesHUD(SDL_Rect* deshacer, SDL_Rect* cheat, SDL_Rect* rehace
         altoBoton
     };
 }
-
 
 //funcion p dibujar texto centrado dentro de botones
 void dibujarTexto(SDL_Renderer* renderer, TTF_Font* fuente, const char* texto, SDL_Rect rect, SDL_Color colorTexto) {
@@ -749,11 +744,7 @@ opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ven
     return resultado;
 }
 
-bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,
-                         opcionesMenuPrincipal* opcionPrincipal,
-                         opcionesMenuTipoPartida* opcionTipo,
-                         opcionesMenuDificultad* dificultad,
-                         char nombreUsuario[MAX_NOMBRE])
+bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMenuPrincipal* opcionPrincipal,opcionesMenuTipoPartida* opcionTipo,opcionesMenuDificultad* dificultad,char nombreUsuario[MAX_NOMBRE])
 {
     while (true) { //opciones menu principal
         *opcionPrincipal = mostrarMenuPrincipal(renderer, ventana, fuenteTexto);

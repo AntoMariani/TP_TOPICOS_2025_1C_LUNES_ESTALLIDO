@@ -45,3 +45,10 @@ void calcularEscaladoUI(EscaladoUI* escalado, int anchoPantalla, int altoPantall
     escalado->tamanioHUD = (int)(TAMANIO_HUD_BASE * escalado->escalaGlobal); //TAMAÑO hud
     escalado->tamanioHUDextra = (int)(TAMANIO_HUD_EXTRA_BASE * escalado->escalaGlobal);
 }
+
+void ajustarVentanaYEscalado(SDL_Window* ventana, Juego* juego) {
+    int anchoVentana = juego->tamCasilla * juego->dimension;
+    int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
+    SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
+    calcularEscaladoUI(&escalado, anchoVentana, altoVentana);
+}

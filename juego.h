@@ -17,6 +17,8 @@ Casilla** crearTablero(int dimension);
 void liberarTablero(Casilla** tablero, int dimension);
 void inicializarJuego(Juego* juego, const char* archivoConfiguracion);
 int calcularTamCasilla(int dimension);
+int obtenerDimensionPorDificultad(opcionesMenuDificultad dificultad);
+float obtenerPorcentajeMinas(opcionesMenuDificultad dificultad);
 void llenar(Juego* juego,int filaInicial, int colInicial);
 void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego);
 void calcularMinasVecinas(Juego* juego);

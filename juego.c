@@ -126,6 +126,26 @@ int calcularTamCasilla(int dimension) { //calcula el tam en piceles de cada casi
     return tam;
 }
 
+int obtenerDimensionPorDificultad(opcionesMenuDificultad dificultad) {
+    switch (dificultad) {
+        case DIFICULTAD_FACIL:   return 8;
+        case DIFICULTAD_MEDIO:   return 16;
+        case DIFICULTAD_DIFICIL: return 24;
+        case DIFICULTAD_SSJ:     return 32;
+        default:                 return 8;  // valor por defecto
+    }
+}
+
+float obtenerPorcentajeMinas(opcionesMenuDificultad dificultad) {
+    switch (dificultad) {
+        case DIFICULTAD_FACIL:   return 0.12f;
+        case DIFICULTAD_MEDIO:   return 0.15f;
+        case DIFICULTAD_DIFICIL: return 0.18f;
+        case DIFICULTAD_SSJ:     return 0.22f;
+        default:                 return 0.0f;
+    }
+}
+
 
 void llenar(Juego* juego, int filaInicial, int colInicial)
 {
@@ -292,11 +312,8 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
     }
     else
     {
-        float porcentajeMinas = 0.0;
-        if (dificultad == DIFICULTAD_FACIL) { dimension = 8; porcentajeMinas = 0.12; }
-        if (dificultad == DIFICULTAD_MEDIO) { dimension = 16; porcentajeMinas = 0.15; }
-        if (dificultad == DIFICULTAD_DIFICIL) { dimension = 24; porcentajeMinas = 0.18; }
-        if (dificultad == DIFICULTAD_SSJ) { dimension = 32; porcentajeMinas = 0.22; }
+        dimension = obtenerDimensionPorDificultad(dificultad);
+        float porcentajeMinas = obtenerPorcentajeMinas(dificultad);
         totalMinas = (int)(dimension * dimension * porcentajeMinas);
         juego.dimension = dimension;
         juego.totalMinas = totalMinas;
@@ -345,7 +362,6 @@ int obtenerMaximoUsosCheat(opcionesMenuDificultad dificultad) {
     }
 }
 
-
 void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario)
 {
     chequearError(iniciarLog(), NO_SE_PUDO_CREAR_LOG);
@@ -359,10 +375,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     Uint32 cheatActivadoTiempo = 0;
 
     //tam ventana segun tablero
-    int anchoVentana = juego->tamCasilla * juego->dimension;
-    int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
-    SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
-    calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+    ajustarVentanaYEscalado(ventana, juego);
 
 
     SDL_Event evento;
@@ -398,10 +411,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         {
                             printf("No se puede deshacer: ya estás en el estado inicial.\n");
                         }
-                        anchoVentana = juego->tamCasilla * juego->dimension;
-                        altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
-                        SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
-                        calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+                        ajustarVentanaYEscalado(ventana, juego);
                         obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
                     break;
                 }
@@ -429,10 +439,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                     if (!rehacerFotoTablero(&juego->historial, juego, ventana)){
                         printf("No hay nada para rehacer\n");
                     }
-                    anchoVentana = juego->tamCasilla * juego->dimension;
-                    altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
-                    SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
-                    calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+                    ajustarVentanaYEscalado(ventana, juego);
                     obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
 
                     break;
@@ -458,10 +465,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         juego->tamCasilla = calcularTamCasilla(juego->dimension);
 
                         //tam ventana segun tablero
-                        anchoVentana = juego->tamCasilla * juego->dimension;
-                        altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
-                        SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
-                        calcularEscaladoUI(&escalado, anchoVentana, altoVentana); //se escala el juego ahora
+                        ajustarVentanaYEscalado(ventana, juego);
                         obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
 
                         //una vez que reescale la ventana, ahora tengo que generar el nuevo tablero y asignarle memoria
@@ -480,11 +484,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                         }
 
                         //calculo de nuevo la cantidad de minas a poner porque no era una func
-                        float porcentajeMinas = 0.0;
-                        if (dificultad == DIFICULTAD_FACIL) {  porcentajeMinas = 0.12f; }
-                        if (dificultad == DIFICULTAD_MEDIO) {  porcentajeMinas = 0.15f; }
-                        if (dificultad == DIFICULTAD_DIFICIL) {  porcentajeMinas = 0.18f; }
-                        if (dificultad == DIFICULTAD_SSJ) {  porcentajeMinas = 0.22f; }
+                        float porcentajeMinas = obtenerPorcentajeMinas(dificultad);
 
                         printf("TOTAL MINAS JUEGO %d\n",juego->totalMinas);
                         int totalMinasNuevo = (int)(juego->dimension * juego->dimension * porcentajeMinas);
@@ -647,10 +647,7 @@ void reiniciarPartida(Juego* juego, opcionesMenuDificultad dificultad, SDL_Windo
     liberarTablero(juego->tablero, juego->dimension);
 
     //tam ventana segun tablero
-    int anchoVentana = juego->tamCasilla * juego->dimension;
-    int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
-    SDL_SetWindowSize(ventana, anchoVentana, altoVentana);
-    calcularEscaladoUI(&escalado, anchoVentana, altoVentana);
+    ajustarVentanaYEscalado(ventana, juego);
 
     // Crear el tablero con valores por defecto
     juego->tablero = crearTablero(juego->dimension);

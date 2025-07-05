@@ -5,6 +5,8 @@
 #define TAMANIO_HUD_BASE 60
 #define TAMANIO_HUD_EXTRA_BASE 60
 
+#include "juego.h"
+
 //la estructura EscaladoUI tiene todos los datos necesarios para el escalado de la UI
 typedef struct {
     float escalaGlobal; //factor de escalado global, se calcula en base a la resolucion de pantalla
@@ -28,5 +30,6 @@ typedef struct {
 extern EscaladoUI escalado;
 
 void calcularEscaladoUI(EscaladoUI* escalado, int anchoPantalla, int altoPantalla);
+void ajustarVentanaYEscalado(SDL_Window* ventana, Juego* juego);
 
 #endif

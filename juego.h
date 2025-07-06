@@ -22,12 +22,12 @@ float obtenerPorcentajeMinas(opcionesMenuDificultad dificultad);
 void llenar(Juego* juego,int filaInicial, int colInicial);
 void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego);
 void calcularMinasVecinas(Juego* juego);
-void liberarJuego(Juego* juego);
 void revelarCasillaSinMina(Juego* juego, int fila, int col);
 int obtenerMaximoUsosCheat(opcionesMenuDificultad dificultad);
 bool ganoLaPartida(Juego* juego);
 void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDificultad dificultad, const char* nombreUsuario);
 void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario);
 void reiniciarPartida(Juego* juego, opcionesMenuDificultad dificultad, SDL_Window * ventana);
+void agrandarTablero(Juego* juego, SDL_Window* ventana, opcionesMenuDificultad dificultad);
 
 #endif // JUEGO_H_INCLUDED

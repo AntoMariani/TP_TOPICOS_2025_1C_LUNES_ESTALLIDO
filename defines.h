@@ -91,7 +91,6 @@ typedef struct {
     Uint32 tiempoFin;
     Casilla** tablero;
     int tamCasilla;
-    int tamPixel;
     bool cheatActivo;
     int cheatUsosRestantes;
     Uint32 cheatTiempoInicio;

@@ -95,21 +95,12 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
     juego->minaExplotadaCol = -1;
 
     juego->tamCasilla = calcularTamCasilla(juego->dimension);
-    //juego->tamPixel = juego->tamCasilla / 8;
 
     //reserva memoria para el array de punteros a filas del tablero
     juego->tablero = crearTablero(juego->dimension);
     if (!juego->tablero)
         chequearError(NO_ASIGNO_MEM_TABLERO, NO_ASIGNO_MEM_TABLERO);
 
-}
-
-
-void liberarJuego(Juego* juego) {
-    for (int i = 0; i < juego->dimension; i++) { //Recorres las filas
-        free(*(juego->tablero + i)); //Libera la memoria
-    }
-    free(juego->tablero); //libera la memoria del array principal de punteros a filas
 }
 
 int calcularTamCasilla(int dimension) { //calcula el tam en piceles de cada casilla del tableto para que todo el tablero entre en la ventana
@@ -323,7 +314,7 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
 
 
     juego.tamCasilla = calcularTamCasilla(dimension);
-    //juego.tamPixel = juego.tamCasilla / 8;
+
     juego.minasMarcadas = 0;
     juego.finalizado = false;
     juego.minasColocadas = false;
@@ -343,8 +334,7 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
 
     liberarHistorialFotosTablero(&juego.historial, juego.dimension);
 
-    liberarJuego(&juego);
-
+    liberarTablero(juego.tablero, juego.dimension);
 
     liberarTodosLosRecursos();
     liberarFuentes();
@@ -377,7 +367,6 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     //tam ventana segun tablero
     ajustarVentanaYEscalado(ventana, juego);
 
-
     SDL_Event evento;
 
     //obtener botones
@@ -387,7 +376,6 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                       &botonReset, &botonAgrandar, &botonSalir, juego);
 
     bool ejecutando = true;
-    bool hizoClickAgrandar = false;
     while (ejecutando)
     {
         while (SDL_PollEvent(&evento))
@@ -455,55 +443,13 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
 
                 }
                 else if (x >= botonAgrandar.x && x <= botonAgrandar.x + botonAgrandar.w &&
-                         y >= botonAgrandar.y && y <= botonAgrandar.y + botonAgrandar.h && !hizoClickAgrandar)
+                         y >= botonAgrandar.y && y <= botonAgrandar.y + botonAgrandar.h)
                 {
-
-                    if(juego->dimension<30)
-                    {
-                        juego->dimension = juego->dimension+2;
-
-                        juego->tamCasilla = calcularTamCasilla(juego->dimension);
-
-                        //tam ventana segun tablero
-                        ajustarVentanaYEscalado(ventana, juego);
-                        obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
-
-                        //una vez que reescale la ventana, ahora tengo que generar el nuevo tablero y asignarle memoria
-
-                        Casilla ** nuevoTablero;
-
-                        nuevoTablero = malloc(juego->dimension * sizeof(Casilla*));
-                        for (int i = 0; i < juego->dimension; i++) {
-                            nuevoTablero[i] = malloc(juego->dimension * sizeof(Casilla));
-                            for (int j = 0; j < juego->dimension; j++) {
-                                if (i<juego->dimension-2 && j<juego->dimension-2)
-                                    nuevoTablero[i][j] = (Casilla){ juego->tablero[i][j].esMina, juego->tablero[i][j].revelada, juego->tablero[i][j].marcada, juego->tablero[i][j].minasVecinas, juego->tablero[i][j].esfera, juego->tablero[i][j].esferaAlPerder };
-                                else
-                                    nuevoTablero[i][j] = (Casilla){ false, false, false, 0, 0, 0 };
-                            }
-                        }
-
-                        //calculo de nuevo la cantidad de minas a poner porque no era una func
-                        float porcentajeMinas = obtenerPorcentajeMinas(dificultad);
-
-                        printf("TOTAL MINAS JUEGO %d\n",juego->totalMinas);
-                        int totalMinasNuevo = (int)(juego->dimension * juego->dimension * porcentajeMinas);
-                        printf("TOTAL MINAS NUEVO %d\n",totalMinasNuevo);
-                        int totalMinasALlenar = totalMinasNuevo - juego->totalMinas;
-                        printf("TOTAL MINAS a llenar %d\n",totalMinasALlenar);
-                        juego->totalMinas = totalMinasNuevo;
-
-
-                        juego->tablero = nuevoTablero;
-
-                        llenarElRestoDeMinas(totalMinasALlenar,juego->dimension, juego);
-                        guardarFotoTablero(&juego->historial, juego);
-
-                        obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
-                      &botonReset, &botonAgrandar, &botonSalir, juego);
+                    if (juego->dimension < 30) {
+                        agrandarTablero(juego, ventana, dificultad);
+                        obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer, &botonReset, &botonAgrandar, &botonSalir, juego);
                     }
                     break;
-                    hizoClickAgrandar = true;
                 }
                 else if (x >= botonSalir.x && x <= botonSalir.x + botonSalir.w &&
                          y >= botonSalir.y && y <= botonSalir.y + botonSalir.h)
@@ -681,3 +627,32 @@ void reiniciarPartida(Juego* juego, opcionesMenuDificultad dificultad, SDL_Windo
     printf("Partida reiniciada completamente.\n");
 }
 
+void agrandarTablero(Juego* juego, SDL_Window* ventana, opcionesMenuDificultad dificultad) {
+    int dimensionAnterior = juego->dimension;
+    juego->dimension += 2;
+    juego->tamCasilla = calcularTamCasilla(juego->dimension);
+    ajustarVentanaYEscalado(ventana, juego);
+
+    Casilla** nuevoTablero = crearTablero(juego->dimension);
+    if (!nuevoTablero)
+        chequearError(NO_ASIGNO_MEM_TABLERO, NO_ASIGNO_MEM_TABLERO);
+
+    //copiar contenido del tablero anterior
+    for (int i = 0; i < dimensionAnterior; i++) {
+        for (int j = 0; j < dimensionAnterior; j++) {
+            nuevoTablero[i][j] = juego->tablero[i][j];
+        }
+    }
+
+    liberarTablero(juego->tablero, dimensionAnterior);
+    juego->tablero = nuevoTablero;
+
+    ///recalcular minas
+    float porcentajeMinas = obtenerPorcentajeMinas(dificultad);
+    int totalMinasNuevo = (int)(juego->dimension * juego->dimension * porcentajeMinas);
+    int totalMinasALlenar = totalMinasNuevo - juego->totalMinas;
+    juego->totalMinas = totalMinasNuevo;
+
+    llenarElRestoDeMinas(totalMinasALlenar, juego->dimension, juego);
+    guardarFotoTablero(&juego->historial, juego);
+}

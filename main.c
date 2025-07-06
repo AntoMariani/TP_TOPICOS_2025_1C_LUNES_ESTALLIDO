@@ -22,7 +22,7 @@ Entrega: No
 
 int main(int argc, char* argv[])
 {
-
+    system("chcp 1252 > nul");
     inicializarSDLCompleto(); //inicializa SDL, SDL_image, SDL_ttf
 
     SDL_Window* ventana = NULL; //genera puntero a la ventana

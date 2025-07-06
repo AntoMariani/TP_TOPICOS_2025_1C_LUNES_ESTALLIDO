@@ -12,6 +12,7 @@
 #include <SDL2/SDL.h>
 #include "interfaz.h"
 #include "historial.h"
+#include "guardar.h"
 
 Casilla** crearTablero(int dimension);
 void liberarTablero(Casilla** tablero, int dimension);

@@ -27,7 +27,7 @@ void liberarTablero(Casilla** tablero, int dimension) {
     free(tablero);
 }
 
-void inicializarJuego(Juego* juego, const char* archivoConfiguracion)
+void inicializarJuego(Juego* juego, const char* archivoConfiguracion) //inicializaCustom nada mas
 {
     FILE* archivo = fopen(archivoConfiguracion, "r"); //abre en read
     if (!archivo) {
@@ -137,7 +137,6 @@ float obtenerPorcentajeMinas(opcionesMenuDificultad dificultad) {
     }
 }
 
-
 void llenar(Juego* juego, int filaInicial, int colInicial)
 {
     srand((unsigned int) time(NULL)); //incializa la semilla del generador de nums random
@@ -194,7 +193,6 @@ void llenarElRestoDeMinas(int totalMinasALlenar, int dimension, Juego * juego){
     printf("Intento %d: minas colocadas\n", intentos);
 
 }
-
 
 void calcularMinasVecinas(Juego* juego) {
     for (int fila = 0; fila < juego->dimension; fila++) { //recorre todas filas y columnas
@@ -372,14 +370,15 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
     //obtener botones
     SDL_Rect botonDeshacer, botonCheat, botonRehacer;
     SDL_Rect botonReset, botonAgrandar, botonSalir;
-    obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,
-                      &botonReset, &botonAgrandar, &botonSalir, juego);
+    obtenerRectBotonesHUD(&botonDeshacer, &botonCheat, &botonRehacer,&botonReset, &botonAgrandar, &botonSalir, juego);
 
     bool ejecutando = true;
     while (ejecutando)
     {
         while (SDL_PollEvent(&evento))
         {
+            int x = evento.button.x;
+            int y = evento.button.y;
             if (evento.type == SDL_QUIT)
             {
                 ejecutando = false;
@@ -389,8 +388,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
             {
 
                 //agarro donde hizo click y me fijo el centro de la ventana, ademas fijo tamanioBoton por alguna razon?
-                int x = evento.button.x;
-                int y = evento.button.y;
+
 
                 if (x >= botonDeshacer.x && x <= botonDeshacer.x + botonDeshacer.w &&
                     y >= botonDeshacer.y && y <= botonDeshacer.y + botonDeshacer.h)
@@ -455,7 +453,21 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                          y >= botonSalir.y && y <= botonSalir.y + botonSalir.h)
                 {
                     printf("CLICK: SALIR\n");
-                    ejecutando = false;
+                    if(!juego->finalizado)
+                    {
+                        int anchoVentana = juego->tamCasilla * juego->dimension;
+                        int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
+                        opcionesMenuGuardar decision = mostrarMenuGuardar(renderer, ventana, fuenteTexto, anchoVentana, altoVentana);
+                        if(decision != OPCION_GUARDAR_CANCELAR)
+                        {
+                            if(decision == OPCION_GUARDAR_SI)
+                            {
+                                puts("Click en guardar y salir");
+                                guardarPartida(juego, nombreUsuario, dificultad);
+                            }
+                            ejecutando = false;
+                         }
+                    }
                 }
 
                 //si el click fue en el tablero
@@ -559,6 +571,19 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                     }
                 }
             }
+            ////para que funcione el boton de salir
+            if(evento.type == SDL_MOUSEBUTTONDOWN && juego->finalizado)
+            {
+                if(evento.button.button == SDL_BUTTON_LEFT)
+                {
+                    if (x >= botonSalir.x && x <= botonSalir.x + botonSalir.w &&
+                            y >= botonSalir.y && y <= botonSalir.y + botonSalir.h)
+                    {
+                        printf("CLICK: SALIR\n");
+                        ejecutando = false;
+                    }
+                }
+            }
         }
         //determina si el cheat esta activo
         bool cheatEnPeriodoActivo = (cheatEnUso && (SDL_GetTicks() - cheatActivadoTiempo) <= DURACION_CHEAT_MS);
@@ -572,6 +597,8 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
         //si termino el periodo del cheat lo desactiva
         if (!cheatEnPeriodoActivo) { cheatEnUso = false; }
         SDL_Delay(16);
+
+
     }
     registrarEvento("FIN", -1, -1, -1);
     const char* nombresDificultad[] = {"FACIL", "MEDIO", "DIFICIL", "SSJ", "CUSTOM", "VOLVER"};

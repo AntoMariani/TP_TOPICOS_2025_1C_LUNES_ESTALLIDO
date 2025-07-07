@@ -13,6 +13,7 @@
 #include "interfaz.h"
 #include "historial.h"
 #include "guardar.h"
+#include "configuracion.h"
 
 Casilla** crearTablero(int dimension);
 void liberarTablero(Casilla** tablero, int dimension);

@@ -118,9 +118,15 @@ typedef struct {
     int cheatUsosRestantes;
     Uint32 cheatTiempoInicio;
     HistorialFotosTablero historial;
+    //bool configEsPorcentaje; //variables por si es custom
+    //int configValorMinas;
 } Juego;
 
-
+typedef struct {
+    int dimension;         // Entre 8 y 32
+    bool esPorcentaje;     // true si el valor de minas es porcentaje
+    int valorMinas;        // valor de minas o porcentaje (ej: 10 o 10%)
+} ConfiguracionJuego;
 
 //Un enum (enumeración) es un tipo de dato que permite definir un conjunto de valores constantes con nombre
 //El typedef permite crear un alias para ese tipo facilitando el uso.
@@ -165,6 +171,12 @@ typedef enum {
     OPCION_CARGAR_SLOT_4,
     OPCION_CARGAR_VOLVER
 } opcionesMenuCargar;
+
+typedef enum {
+    OPCION_CUSTOM_JUGAR,
+    OPCION_CUSTOM_VOLVER
+} opcionesMenuCustom;
+
 
 void chequearError(int error, int errorEsperado);
 

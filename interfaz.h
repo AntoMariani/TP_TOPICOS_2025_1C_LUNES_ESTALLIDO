@@ -39,6 +39,8 @@ opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window*
 opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, char* nombreUsuario);
 opcionesMenuGuardar mostrarMenuGuardar(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, int ancho, int alto);
 opcionesMenuCargar mostrarMenuCargarPartida(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente);
+opcionesMenuCustom mostrarMenuConfiguracionCustom(SDL_Renderer* renderer, TTF_Font* fuente, ConfiguracionJuego* configOut);
+
 
 bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMenuPrincipal* opcionPrincipal,opcionesMenuTipoPartida* opcionTipo,opcionesMenuDificultad* dificultad,opcionesMenuCargar *opcionCargar, char nombreUsuario[MAX_NOMBRE]);
 void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano);

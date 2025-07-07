@@ -81,6 +81,8 @@ void inicializarJuego(Juego* juego, const char* archivoConfiguracion) //iniciali
         chequearError(ERROR_CANTIDAD_MINAS, ERROR_CANTIDAD_MINAS);
     }
 
+    
+
     fclose(archivo); //cierra
 
     printf("dimensiones=%d totalMinas=%d\n", juego->dimension, juego->totalMinas);

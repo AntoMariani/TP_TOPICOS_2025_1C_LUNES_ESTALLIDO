@@ -179,7 +179,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     // calcula el tiempo, si el juego ya termino usa el (tiempo de fin - inicio)/1000 para segundos, si el juego esta en curso usa SDL_GetTicks() que devuelve ms dedde que se inciio SDL - tiempoInicio.
     int segundosTranscurridos = (juego->finalizado) ? (juego->tiempoFin - juego->tiempoInicio) / 1000 : (SDL_GetTicks() - juego->tiempoInicio) / 1000;
 
-    
+
     //limitamos tiempo a 999
     if (segundosTranscurridos > 999) segundosTranscurridos = 999;
 
@@ -880,7 +880,104 @@ opcionesMenuCargar mostrarMenuCargarPartida(SDL_Renderer* renderer, SDL_Window* 
     return OPCION_CARGAR_VOLVER;
 }
 
+opcionesMenuCustom mostrarMenuConfiguracionCustom(SDL_Renderer* renderer, TTF_Font* fuente, ConfiguracionJuego* configOut) {
+    int dimension = 10;
+    int valorMinas = 10;
+    bool esPorcentaje = false;
 
+    SDL_Event evento;
+    bool salir = false;
+    opcionesMenuCustom opcionElegida = OPCION_CUSTOM_VOLVER;
+
+    // Cálculos de layout
+    int cantidadBloques = 5; // dimension, minas, tipo, jugar, volver
+    int altoTotal = cantidadBloques * escalado.botonAlto + (cantidadBloques - 1) * escalado.espaciadoVertical;
+    int inicioY = escalado.margenInicialY + (escalado.altoVentanaMenu - escalado.margenInicialY - altoTotal) / 2;
+    int ancho = escalado.anchoVentanaMenu * 0.8f;
+    int xCentro = (escalado.anchoVentanaMenu - ancho) / 2;
+
+    // Rectángulos
+    SDL_Rect rectDim = { xCentro, inicioY, ancho, escalado.botonAlto };
+    SDL_Rect botonMenosDim = { rectDim.x, rectDim.y, escalado.botonAlto, escalado.botonAlto };
+    SDL_Rect botonMasDim = { rectDim.x + rectDim.w - escalado.botonAlto, rectDim.y, escalado.botonAlto, escalado.botonAlto };
+
+    SDL_Rect rectMinas = { xCentro, rectDim.y + escalado.botonAlto + escalado.espaciadoVertical, ancho, escalado.botonAlto };
+    SDL_Rect botonMenosMinas = { rectMinas.x, rectMinas.y, escalado.botonAlto, escalado.botonAlto };
+    SDL_Rect botonMasMinas = { rectMinas.x + rectMinas.w - escalado.botonAlto, rectMinas.y, escalado.botonAlto, escalado.botonAlto };
+
+    SDL_Rect rectTipo = { xCentro, rectMinas.y + escalado.botonAlto + escalado.espaciadoVertical, ancho, escalado.botonAlto };
+    SDL_Rect rectJugar = { xCentro, rectTipo.y + escalado.botonAlto + escalado.espaciadoVertical, ancho, escalado.botonAlto };
+    SDL_Rect rectVolver = { xCentro, rectJugar.y + escalado.botonAlto + escalado.espaciadoVertical, ancho, escalado.botonAlto };
+
+    while (!salir) {
+        while (SDL_PollEvent(&evento)) {
+            if (evento.type == SDL_QUIT)
+                exit(0);
+            else if (evento.type == SDL_MOUSEBUTTONDOWN) {
+                int x = evento.button.x;
+                int y = evento.button.y;
+
+                if (x >= botonMasDim.x && x <= botonMasDim.x + botonMasDim.w && y >= botonMasDim.y && y <= botonMasDim.y + botonMasDim.h)
+                    if (dimension < 32) dimension++;
+                if (x >= botonMenosDim.x && x <= botonMenosDim.x + botonMenosDim.w && y >= botonMenosDim.y && y <= botonMenosDim.y + botonMenosDim.h)
+                    if (dimension > 8) dimension--;
+
+                if (x >= botonMasMinas.x && x <= botonMasMinas.x + botonMasMinas.w && y >= botonMasMinas.y && y <= botonMasMinas.y + botonMasMinas.h)
+                    valorMinas++;
+                if (x >= botonMenosMinas.x && x <= botonMenosMinas.x + botonMenosMinas.w && y >= botonMenosMinas.y && y <= botonMenosMinas.y + botonMenosMinas.h)
+                    if (valorMinas > 1) valorMinas--;
+
+                if (x >= rectTipo.x && x <= rectTipo.x + rectTipo.w && y >= rectTipo.y && y <= rectTipo.y + rectTipo.h)
+                    esPorcentaje = !esPorcentaje;
+
+                if (x >= rectJugar.x && x <= rectJugar.x + rectJugar.w && y >= rectJugar.y && y <= rectJugar.y + rectJugar.h) {
+                    configOut->dimension = dimension;
+                    configOut->valorMinas = valorMinas;
+                    configOut->esPorcentaje = esPorcentaje;
+                    opcionElegida = OPCION_CUSTOM_JUGAR;
+                    salir = true;
+                }
+
+                if (x >= rectVolver.x && x <= rectVolver.x + rectVolver.w && y >= rectVolver.y && y <= rectVolver.y + rectVolver.h) {
+                    opcionElegida = OPCION_CUSTOM_VOLVER;
+                    salir = true;
+                }
+            }
+        }
+
+        // DIBUJO
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_RenderClear(renderer);
+
+        // Logo
+        int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES;
+        dibujarLogo(renderer, NULL, frameLogo);
+
+        // Textos
+        char buffer[64];
+        sprintf(buffer, "Dimension: %d", dimension);
+        dibujarTexto(renderer, fuenteBotones, buffer, rectDim, colores[NARANJA_FUERTE]);
+
+        sprintf(buffer, esPorcentaje ? "Minas: %d%%" : "Minas: %d", valorMinas);
+        dibujarTexto(renderer, fuenteBotones, buffer, rectMinas, colores[NARANJA_FUERTE]);
+
+        // Botones
+        dibujarBotonConTexto(renderer, botonMenosDim, colores[FONDO_BOTONES], true, fuenteBotones, "-", colores[CB]);
+        dibujarBotonConTexto(renderer, botonMasDim, colores[FONDO_BOTONES], true, fuenteBotones, "+", colores[CB]);
+
+        dibujarBotonConTexto(renderer, botonMenosMinas, colores[FONDO_BOTONES], true, fuenteBotones, "-", colores[CB]);
+        dibujarBotonConTexto(renderer, botonMasMinas, colores[FONDO_BOTONES], true, fuenteBotones, "+", colores[CB]);
+
+        dibujarBotonConTexto(renderer, rectTipo, colores[CNH], true, fuenteBotones, esPorcentaje ? "%" : "Fijo", colores[CB]);
+        dibujarBotonConTexto(renderer, rectJugar, colores[CNH], true, fuente, "JUGAR", colores[CB]);
+        dibujarBotonConTexto(renderer, rectVolver, colores[ROJO_ALERTA], true, fuente, "VOLVER", colores[CB]);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+    }
+
+    return opcionElegida;
+}
 
 bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuPrincipal* opcionPrincipal, opcionesMenuTipoPartida* opcionTipo, opcionesMenuDificultad* dificultad, opcionesMenuCargar*opcionCargar, char nombreUsuario[MAX_NOMBRE]) {
     while (true) { //opciones menu principal
@@ -935,6 +1032,16 @@ bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMe
                         *dificultad = mostrarMenuDificultad(renderer, ventana, fuenteTexto);
                         if (*dificultad == DIFICULTAD_VOLVER)
                             break; // Volver al menú tipo de partida porque se repite el while más cercano
+                        if (*dificultad == DIFICULTAD_CUSTOM)
+                        {
+                            ConfiguracionJuego config;
+                            opcionesMenuCustom opcionCustom = mostrarMenuConfiguracionCustom(renderer, fuenteTexto, &config);
+
+                            if (opcionCustom == OPCION_CUSTOM_VOLVER)
+                                break;
+
+                            guardarConfiguracion(&config);
+                        }
                         while (true) {
                             // Menú nickname, donde pide el nick
                             opcionesMenuNickname opcionNick = mostrarMenuNickname(renderer, ventana, fuenteTexto, nombreUsuario);

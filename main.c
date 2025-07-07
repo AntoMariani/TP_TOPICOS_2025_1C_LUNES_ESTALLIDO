@@ -8,22 +8,13 @@
 
 
 /*
-Apellido: Mariani, Antonella Lucia
-DNI: 41585421
-Entrega: Sí
-
 Apellido: Nieva, Alejo Nicolas
 DNI: 46556068
-Entrega: Sí
-
-Apellido: Savino, Gabriel Dario
-DNI: 39067659
-Entrega: No
 */
 
 int main(int argc, char* argv[])
 {
-    system("chcp 65001 > nul");     
+    system("chcp 65001 > nul");
     inicializarSDLCompleto(); //inicializa SDL, SDL_image, SDL_ttf
 
     SDL_Window* ventana = NULL; //genera puntero a la ventana
@@ -36,7 +27,7 @@ int main(int argc, char* argv[])
 
     bool salirPrograma = false; //flag para controlar el programa
 
-    while (!salirPrograma) 
+    while (!salirPrograma)
     {
         //inicializamos las opciones de los menus para poder enviarla al flujo de menus
         opcionesMenuPrincipal opcionPrincipal;
@@ -49,8 +40,8 @@ int main(int argc, char* argv[])
 
         //bool continuarMenus almacena si el usuario quiere continuar o no en los menus
         bool continuarMenus = mostrarFlujoDeMenus(renderer, ventana, &opcionPrincipal, &opcionTipo, &dificultad, &opcionCargar, nombreUsuario);
-        
-        if (!continuarMenus) 
+
+        if (!continuarMenus)
         {
             salirPrograma = true;
             continue; //usamos continue para saltar al final del bucle y no ejecutar el resto del código

@@ -72,9 +72,7 @@
 #define MAX_ESTADISTICAS 3
 #define MAX_ESTAD_TOTALES 100
 
-
 #define MAX_ENTRADAS 3
-
 
 //estructura juego normal
 typedef struct {
@@ -160,6 +158,14 @@ typedef enum {
     OPCION_GUARDAR_NO //SEGUIR JUGANDO
 } opcionesMenuGuardar;
 
+typedef enum {
+    OPCION_CARGAR_SLOT_1,
+    OPCION_CARGAR_SLOT_2,
+    OPCION_CARGAR_SLOT_3,
+    OPCION_CARGAR_SLOT_4,
+    OPCION_CARGAR_VOLVER
+} opcionesMenuCargar;
+
 void chequearError(int error, int errorEsperado);
 
 
@@ -174,7 +180,7 @@ typedef struct {
     bool minasColocadas;
     Uint32 tiempoInicio;
     Uint32 tiempoFin;
-    Casilla** tablero;
+    Casilla tablero[MAX_DIMENSION][MAX_DIMENSION];
     int tamCasilla;
     bool cheatActivo;
     int cheatUsosRestantes;

@@ -1,6 +1,6 @@
 #include "juego.h"
 #include "log.h"
-
+#include "guardar.h"
 
 Casilla** crearTablero(int dimension) {
     Casilla** tablero = malloc(dimension * sizeof(Casilla*));
@@ -325,7 +325,7 @@ void ejecutarPartida(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuDi
 
     inicializarHistorialFotosTablero(&juego.historial);
 
-    ejecutarLoopDeJuego(renderer, ventana, &juego, dificultad, nombreUsuario);
+    ejecutarLoopDeJuego(renderer, ventana, &juego, dificultad, nombreUsuario,false);
 
     SDL_PumpEvents();
     SDL_FlushEvent(SDL_MOUSEBUTTONDOWN);
@@ -350,18 +350,21 @@ int obtenerMaximoUsosCheat(opcionesMenuDificultad dificultad) {
     }
 }
 
-void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario)
+void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* juego, opcionesMenuDificultad dificultad, const char* nombreUsuario,bool esPartidaGuardada)
 {
     chequearError(iniciarLog(), NO_SE_PUDO_CREAR_LOG);
     chequearError(registrarEvento("INICIO", -1, -1, -1), ERROR_LOG_ESCRITURA);
-    juego->tiempoInicio = SDL_GetTicks();
 
-    //cheat
     int clicksCheat = 0;
-    juego->cheatUsosRestantes = obtenerMaximoUsosCheat(dificultad);
     bool cheatEnUso = false;
     Uint32 cheatActivadoTiempo = 0;
 
+    if(!esPartidaGuardada)
+    {
+        juego->tiempoInicio = SDL_GetTicks();
+        //cheat
+        juego->cheatUsosRestantes = obtenerMaximoUsosCheat(dificultad);
+    }
     //tam ventana segun tablero
     ajustarVentanaYEscalado(ventana, juego);
 

@@ -1,6 +1,7 @@
 #include "interfaz.h"
 #include <stdio.h>
 
+
 void inicializarSDL() {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
         printf("Error al inicializar SDL: %s\n", SDL_GetError());
@@ -178,8 +179,10 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     // calcula el tiempo, si el juego ya termino usa el (tiempo de fin - inicio)/1000 para segundos, si el juego esta en curso usa SDL_GetTicks() que devuelve ms dedde que se inciio SDL - tiempoInicio.
     int segundosTranscurridos = (juego->finalizado) ? (juego->tiempoFin - juego->tiempoInicio) / 1000 : (SDL_GetTicks() - juego->tiempoInicio) / 1000;
 
+    
     //limitamos tiempo a 999
     if (segundosTranscurridos > 999) segundosTranscurridos = 999;
+
 
     //idem minas
     char tiempoTexto[4];
@@ -774,7 +777,7 @@ opcionesMenuGuardar mostrarMenuGuardar(SDL_Renderer* renderer, SDL_Window* venta
                     return OPCION_GUARDAR_CANCELAR;
             }
         }
-        
+
 
         SDL_SetRenderDrawColor(renderer, 0,0,0,255);
         SDL_RenderClear(renderer);
@@ -790,8 +793,96 @@ opcionesMenuGuardar mostrarMenuGuardar(SDL_Renderer* renderer, SDL_Window* venta
     return OPCION_GUARDAR_CANCELAR;
 }
 
-bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMenuPrincipal* opcionPrincipal,opcionesMenuTipoPartida* opcionTipo,opcionesMenuDificultad* dificultad,char nombreUsuario[MAX_NOMBRE])
-{
+
+opcionesMenuCargar mostrarMenuCargarPartida(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente) {
+    SDL_Event evento;
+    bool salir = false;
+
+    int cantidadBotones = 5;
+    int altoTotal = cantidadBotones * escalado.botonAlto + (cantidadBotones - 1) * escalado.espaciadoVertical;
+    int inicioY = escalado.margenInicialY + (escalado.altoVentanaMenu - escalado.margenInicialY - altoTotal) / 2;
+
+    SDL_Rect botones[5];
+    for (int i = 0; i < 5; i++) {
+        botones[i].x = (escalado.anchoVentanaMenu - escalado.botonAncho) / 2;
+        botones[i].y = inicioY + i * (escalado.botonAlto + escalado.espaciadoVertical);
+        botones[i].w = escalado.botonAncho;
+        botones[i].h = escalado.botonAlto;
+    }
+
+    // Cargar partidas desde archivo
+    PartidaGuardada partidas[MAX_PARTIDAS_GUARDADAS] = {0};
+    int cantidadLeida = 0;
+
+    FILE* archivo = fopen(NOMBRE_ARCHIVO_PARTIDAS, "rb");
+    if (archivo) {
+        cantidadLeida = fread(partidas, sizeof(PartidaGuardada), MAX_PARTIDAS_GUARDADAS, archivo);
+        fclose(archivo);
+    }
+
+    while (!salir) {
+        while (SDL_PollEvent(&evento)) {
+            if (evento.type == SDL_QUIT) exit(0);
+            else if (evento.type == SDL_MOUSEBUTTONDOWN) {
+                int x = evento.button.x, y = evento.button.y;
+                for (int i = 0; i < 4; i++)
+                {
+                    if (x >= botones[i].x && x <= botones[i].x + botones[i].w &&
+                        y >= botones[i].y && y <= botones[i].y + botones[i].h) {
+                        return (opcionesMenuCargar)i;
+                    }
+                }
+                if (x >= botones[4].x && x <= botones[4].x + botones[4].w &&
+                    y >= botones[4].y && y <= botones[4].y + botones[4].h) {
+                    return OPCION_CARGAR_VOLVER;
+                }
+            }
+        }
+
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_RenderClear(renderer);
+
+        int frameLogo = (SDL_GetTicks() / 300) % LOGO_FRAMES;
+        dibujarLogo(renderer, ventana, frameLogo);
+
+        // Dibujar botones
+        for (int i = 0; i < 4; i++) {
+            char textoBoton[64];
+            if (i < cantidadLeida && partidas[i].dimension > 0) {
+                char letraDificultad = 'F';
+                switch (partidas[i].dificultad) {
+                    case DIFICULTAD_MEDIO: letraDificultad = 'M'; break;
+                    case DIFICULTAD_DIFICIL: letraDificultad = 'D'; break;
+                    case DIFICULTAD_SSJ: letraDificultad = 'S'; break;
+                    default: break;
+                }
+
+                time_t tiempo = partidas[i].tiempoGuardado;
+                struct tm* tm_info = localtime(&tiempo);
+                char fecha[16] = "-";
+                if (tm_info != NULL)
+                    strftime(fecha, sizeof(fecha), "%d/%m/%y", tm_info);
+
+                snprintf(textoBoton, sizeof(textoBoton), "[%c]%s - %s", letraDificultad, partidas[i].nombreUsuario, fecha);
+            } else {
+                snprintf(textoBoton, sizeof(textoBoton), "-");
+            }
+
+            dibujarBotonConTexto(renderer, botones[i], colores[FONDO_BOTONES], true, fuenteHUD, textoBoton, colores[CNH]);
+        }
+
+        dibujarBotonConTexto(renderer, botones[4], colores[FONDO_BOTONES], true, fuente, "VOLVER", colores[CNH]);
+
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+    }
+
+    return OPCION_CARGAR_VOLVER;
+}
+
+
+
+bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana, opcionesMenuPrincipal* opcionPrincipal, opcionesMenuTipoPartida* opcionTipo, opcionesMenuDificultad* dificultad, opcionesMenuCargar*opcionCargar, char nombreUsuario[MAX_NOMBRE]) {
     while (true) { //opciones menu principal
         *opcionPrincipal = mostrarMenuPrincipal(renderer, ventana, fuenteTexto);
         //si quiso salir, salgo del menu
@@ -809,18 +900,46 @@ bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMen
                 *opcionTipo = mostrarMenuTipoPartida(renderer, ventana, fuenteTexto);
                 if (*opcionTipo == OPCION_PARTIDA_MENU_PRINCIPAL)
                     break; // Corta y vuelve al menú principal porque el primer while vuelve a arrancar
+
+                // Si eligió cargar partida
+                if (*opcionTipo == OPCION_PARTIDA_CARGAR)
+                {
+                    while (true) {
+                        opcionesMenuCargar slot = mostrarMenuCargarPartida(renderer, ventana, fuenteTexto);
+                        if (slot != OPCION_CARGAR_VOLVER)
+                        {
+                            Juego juego;
+                            opcionesMenuDificultad dificultad;
+                            if(cargarPartidaGuardada(&juego, slot, &dificultad, nombreUsuario))
+                            {
+                                ejecutarLoopDeJuego(renderer, ventana, &juego, dificultad, nombreUsuario,true);
+                                liberarHistorialFotosTablero(&juego.historial, juego.dimension);
+                                liberarTablero(juego.tablero, juego.dimension);
+                                liberarTodosLosRecursos();
+                                liberarFuentes();
+                                liberarTodo(renderer,ventana);
+                                exit(0);
+                            }
+                            else
+                            {
+                                puts("No se pudo cargar la partida");
+                            }
+                        }
+                        break; // volver al menú tipo de partida
+                    }
+                }
                 //si llego aca es porque eligió una partida nueva
                 if (*opcionTipo == OPCION_PARTIDA_NUEVA) {
                     while (true) { //manejo de menús de partida nueva
                         // Menú dificultad
                         *dificultad = mostrarMenuDificultad(renderer, ventana, fuenteTexto);
                         if (*dificultad == DIFICULTAD_VOLVER)
-                            break; // Volver al menú tipo de partida porque se repite el while mas cercano
+                            break; // Volver al menú tipo de partida porque se repite el while más cercano
                         while (true) {
                             // Menú nickname, donde pide el nick
                             opcionesMenuNickname opcionNick = mostrarMenuNickname(renderer, ventana, fuenteTexto, nombreUsuario);
                             if (opcionNick == OPCION_NICKNAME_VOLVER)
-                                break; // Volver al menú dificultad pooorque vuelve al while mas cercano
+                                break; // Volver al menú dificultad
                             // Si llegó acá, juega
                             return true;
                         }
@@ -830,6 +949,7 @@ bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMen
         }
     }
 }
+
 
 void dibujarLogo(SDL_Renderer* renderer, SDL_Window* ventana, int frameLogo)
 {

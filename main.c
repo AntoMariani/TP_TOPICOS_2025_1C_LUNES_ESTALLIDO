@@ -6,6 +6,7 @@
 #include "escalado.h"
 #include "juego.h"
 
+
 /*
 Apellido: Mariani, Antonella Lucia
 DNI: 41585421
@@ -22,7 +23,7 @@ Entrega: No
 
 int main(int argc, char* argv[])
 {
-    system("chcp 1252 > nul");
+    system("chcp 65001 > nul");     
     inicializarSDLCompleto(); //inicializa SDL, SDL_image, SDL_ttf
 
     SDL_Window* ventana = NULL; //genera puntero a la ventana
@@ -41,12 +42,13 @@ int main(int argc, char* argv[])
         opcionesMenuPrincipal opcionPrincipal;
         opcionesMenuTipoPartida opcionTipo;
         opcionesMenuDificultad dificultad;
+        opcionesMenuCargar opcionCargar;
 
         //inicializamos el nombre de usuario que se usa para guardar estadisticas
         char nombreUsuario[MAX_NOMBRE] = "";
 
         //bool continuarMenus almacena si el usuario quiere continuar o no en los menus
-        bool continuarMenus = mostrarFlujoDeMenus(renderer, ventana, &opcionPrincipal, &opcionTipo, &dificultad, nombreUsuario);
+        bool continuarMenus = mostrarFlujoDeMenus(renderer, ventana, &opcionPrincipal, &opcionTipo, &dificultad, &opcionCargar, nombreUsuario);
         
         if (!continuarMenus) 
         {

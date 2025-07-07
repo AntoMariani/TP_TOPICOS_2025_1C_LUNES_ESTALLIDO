@@ -9,6 +9,7 @@
 #include "juego.h"
 #include "dibujos.h"
 #include "estadisticas.h"
+#include "guardar.h"
 
 void inicializarSDLTtf();
 void inicializarSDLImagenes();
@@ -37,11 +38,10 @@ opcionesMenuTipoPartida mostrarMenuTipoPartida(SDL_Renderer* renderer, SDL_Windo
 opcionesMenuDificultad mostrarMenuDificultad(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font * fuente);
 opcionesMenuNickname mostrarMenuNickname(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, char* nombreUsuario);
 opcionesMenuGuardar mostrarMenuGuardar(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente, int ancho, int alto);
+opcionesMenuCargar mostrarMenuCargarPartida(SDL_Renderer* renderer, SDL_Window* ventana, TTF_Font* fuente);
 
-bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMenuPrincipal* opcionPrincipal,opcionesMenuTipoPartida* opcionTipo,opcionesMenuDificultad* dificultad,char nombreUsuario[MAX_NOMBRE]);
-
+bool mostrarFlujoDeMenus(SDL_Renderer* renderer, SDL_Window* ventana,opcionesMenuPrincipal* opcionPrincipal,opcionesMenuTipoPartida* opcionTipo,opcionesMenuDificultad* dificultad,opcionesMenuCargar *opcionCargar, char nombreUsuario[MAX_NOMBRE]);
 void mostrarPantallaFin(SDL_Renderer* renderer, Juego* juego, bool gano);
-
 void liberarTodo(SDL_Renderer* renderer, SDL_Window* ventana);
 
 #endif // INTERFAZ_H_INCLUDED

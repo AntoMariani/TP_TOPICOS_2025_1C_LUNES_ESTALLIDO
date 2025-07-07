@@ -31,23 +31,20 @@ void guardarPartida(Juego * juego, const char * nombreUsuario, opcionesMenuDific
     nuevaPartida.minaExplotadaCol = juego->minaExplotadaCol;
     nuevaPartida.finalizado = juego->finalizado;
     nuevaPartida.minasColocadas = juego->minasColocadas;
-    nuevaPartida.tiempoInicio =
-
-    nuevaPartida.tiempoGuardado = SDL_GetTicks(); ///FIJARSE ESTO
+    nuevaPartida.tiempoGuardado = (Uint32)time(NULL);
     nuevaPartida.tiempoFin = juego->tiempoFin;
     nuevaPartida.tamCasilla = juego->tamCasilla;
     nuevaPartida.cheatActivo = juego->cheatActivo;
     nuevaPartida.cheatUsosRestantes = juego->cheatUsosRestantes;
-    nuevaPartida.tiempoInicio = juego->tiempoInicio;
+
+    Uint32 tiempoJugadoHastaAhora = (juego->finalizado ? juego->tiempoFin : SDL_GetTicks()) - juego->tiempoInicio;
+    nuevaPartida.tiempoInicio = tiempoJugadoHastaAhora;
     strncpy(nuevaPartida.nombreUsuario,nombreUsuario, MAX_NOMBRE);
     nuevaPartida.dificultad = dificultad;
 
-    nuevaPartida.tablero = copiarTablero(juego->tablero, juego->dimension);
-
-    if(!nuevaPartida.tablero){
-        printf("Error al copiar el tablero\n");
-        return;
-    }
+    for (int i = 0; i < nuevaPartida.dimension; i++)
+        for (int j = 0; j < nuevaPartida.dimension; j++)
+            nuevaPartida.tablero[i][j] = juego->tablero[i][j];
 
     if(cantidad == MAX_PARTIDAS_GUARDADAS)
     {
@@ -63,11 +60,10 @@ void guardarPartida(Juego * juego, const char * nombreUsuario, opcionesMenuDific
         cantidad++;
     }
 
-    FILE * archivoEscritura = fopen(NOMBRE_ARCHIVO_PARTIDAS, "rb");
+    FILE * archivoEscritura = fopen(NOMBRE_ARCHIVO_PARTIDAS, "wb");
 
     if(!archivoEscritura){
         puts("error al abrir archivo para guardar partidas");
-        liberarTablero(nuevaPartida.tablero, nuevaPartida.dificultad);
         return;
     }
 
@@ -76,12 +72,69 @@ void guardarPartida(Juego * juego, const char * nombreUsuario, opcionesMenuDific
     }
 
     fclose(archivoEscritura);
-    liberarTablero(nuevaPartida.tablero,nuevaPartida.dimension);
+    //liberarTablero(nuevaPartida.tablero,nuevaPartida.dimension);
 
     puts("Se guardo campeon\n");
 }
 
+bool cargarPartidaGuardada(Juego* juego, int indiceSlot, opcionesMenuDificultad *dificultad, char* nombreUsuario){
+    printf("ingrese a cargar partida guardada");
+    if(indiceSlot < 0 || indiceSlot >= MAX_PARTIDAS_GUARDADAS)
+    {
+        puts("Eligio cualquier cosa");
+        return false;
+    }
+    FILE* archivo = fopen(NOMBRE_ARCHIVO_PARTIDAS,"rb");
+    if(!archivo)
+    {
+        printf("No se pudo abrir el archivo %s\n",NOMBRE_ARCHIVO_PARTIDAS);
+        return false;
+    }
+    PartidaGuardada cargarPartida;
 
+    fseek(archivo, sizeof(PartidaGuardada) * indiceSlot, SEEK_SET);
+    fread(&cargarPartida, sizeof(PartidaGuardada), 1, archivo);
+    fclose(archivo);
+
+    //revisar y revisar tiempo
+    juego->dimension = cargarPartida.dimension;
+    juego->totalMinas = cargarPartida.totalMinas;
+    juego->minasMarcadas = cargarPartida.minasMarcadas;
+    juego->minaExplotadaFila = cargarPartida.minaExplotadaFila;
+    juego->minaExplotadaCol = cargarPartida.minaExplotadaCol;
+    juego->finalizado = cargarPartida.finalizado;
+    juego->minasColocadas = cargarPartida.minasColocadas;
+    Uint32 tiempoJugadoHastaAhora = cargarPartida.tiempoInicio;
+    juego->tiempoInicio = SDL_GetTicks() - tiempoJugadoHastaAhora;
+    juego->tiempoFin = juego->finalizado ? juego->tiempoInicio + tiempoJugadoHastaAhora : 0;
+    juego->tiempoFin = cargarPartida.tiempoFin;
+    juego->tamCasilla = cargarPartida.tamCasilla;
+    juego->cheatActivo = cargarPartida.cheatActivo;
+    juego->cheatUsosRestantes = cargarPartida.cheatUsosRestantes;
+    juego->cheatTiempoInicio = 0;
+
+    strncpy(nombreUsuario, cargarPartida.nombreUsuario, MAX_NOMBRE);
+    *dificultad = cargarPartida.dificultad;
+
+
+    juego->tablero = crearTablero(cargarPartida.dimension);
+    if(!juego->tablero){
+        puts("Error al cargar partida");
+        return false;
+    }
+
+    for (int i = 0; i < cargarPartida.dimension; i++) {
+        for (int j = 0; j < cargarPartida.dimension; j++) {
+            juego->tablero[i][j] = cargarPartida.tablero[i][j];
+        }
+    }
+
+    inicializarHistorialFotosTablero(&juego->historial);
+    guardarFotoTablero(&juego->historial, juego);
+
+    printf("TIEMPO INICIO CARGADO: %u\n", juego->tiempoInicio);
+    return true;
+}
 
 
 

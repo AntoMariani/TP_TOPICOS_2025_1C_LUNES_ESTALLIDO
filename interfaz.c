@@ -213,6 +213,7 @@ void dibujarTablero(SDL_Renderer* renderer, Juego* juego, TTF_Font* fuente, TTF_
     // Botones con lógica de habilitado
     dibujarBotonConTexto(renderer, botonDeshacer, colores[NARANJA_FUERTE], puedeDeshacer, fuenteHUD, "<", colores[ROJO_ALERTA]);
     dibujarBotonConTexto(renderer, botonRehacer,  colores[NARANJA_FUERTE], puedeRehacer,  fuenteHUD, ">", colores[ROJO_ALERTA]);
+
     dibujarBotonConTexto(renderer, botonAgrandar, colores[CNH],         puedeAgrandar, fuenteBotones, "EXPAND", colores[CB]);
 
     // Botones siempre habilitados
@@ -847,13 +848,14 @@ opcionesMenuCargar mostrarMenuCargarPartida(SDL_Renderer* renderer, SDL_Window* 
 
         // Dibujar botones
         for (int i = 0; i < 4; i++) {
-            char textoBoton[64];
+            char textoBoton[TEXTO_GUARDADO];
             if (i < cantidadLeida && partidas[i].dimension > 0) {
                 char letraDificultad = 'F';
                 switch (partidas[i].dificultad) {
                     case DIFICULTAD_MEDIO: letraDificultad = 'M'; break;
                     case DIFICULTAD_DIFICIL: letraDificultad = 'D'; break;
                     case DIFICULTAD_SSJ: letraDificultad = 'S'; break;
+                    case DIFICULTAD_CUSTOM: letraDificultad = 'C'; break;
                     default: break;
                 }
 

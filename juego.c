@@ -459,8 +459,8 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
                       &botonReset, &botonAgrandar, &botonSalir, juego);
 
                 }
-                else if (x >= botonAgrandar.x && x <= botonAgrandar.x + botonAgrandar.w &&
-                         y >= botonAgrandar.y && y <= botonAgrandar.y + botonAgrandar.h)
+                else if (dificultad != DIFICULTAD_CUSTOM && x >= botonAgrandar.x && x <= botonAgrandar.x + botonAgrandar.w &&
+                         y >= botonAgrandar.y && y <= botonAgrandar.y + botonAgrandar.h )
                 {
                     if (juego->dimension < 30) {
                         agrandarTablero(juego, ventana, dificultad);
@@ -609,7 +609,7 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
 
         bool puedeDeshacer = juego->historial.posActual > 1;
         bool puedeRehacer = juego->historial.posActual < juego->historial.cantidad;
-        bool puedeAgrandar = juego->dimension < 30;
+        bool puedeAgrandar = juego->dimension < 30 && dificultad != DIFICULTAD_CUSTOM;
         //dibuja tablero e interfaz
         dibujarTablero(renderer, juego, fuenteTexto, fuenteHUD, fuenteBotones, clicksCheat, cheatEnPeriodoActivo, cheatActivadoTiempo, puedeRehacer, puedeDeshacer, puedeAgrandar);
 

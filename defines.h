@@ -74,6 +74,8 @@
 
 #define MAX_ENTRADAS 3
 
+#define TEXTO_GUARDADO 64
+
 //estructura juego normal
 typedef struct {
     bool esMina;

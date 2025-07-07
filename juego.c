@@ -384,7 +384,21 @@ void ejecutarLoopDeJuego(SDL_Renderer* renderer, SDL_Window* ventana, Juego* jue
             int y = evento.button.y;
             if (evento.type == SDL_QUIT)
             {
-                ejecutando = false;
+                if(!juego->finalizado)
+                    {
+                        int anchoVentana = juego->tamCasilla * juego->dimension;
+                        int altoVentana  = escalado.tamanioHUD + escalado.tamanioHUDextra + juego->tamCasilla * juego->dimension;
+                        opcionesMenuGuardar decision = mostrarMenuGuardar(renderer, ventana, fuenteTexto, anchoVentana, altoVentana);
+                        if(decision != OPCION_GUARDAR_CANCELAR)
+                        {
+                            if(decision == OPCION_GUARDAR_SI)
+                            {
+                                puts("Click en guardar y salir");
+                                guardarPartida(juego, nombreUsuario, dificultad);
+                            }
+                            ejecutando = false;
+                         }
+                    }
             }
             //si se detecta clck y juego no termino
             else if (evento.type == SDL_MOUSEBUTTONDOWN && !juego->finalizado && juego->tablero != NULL)
